@@ -565,6 +565,206 @@
       .layout{padding:9px}
     }
 
+  
+    /* ===== V18 · QA de UI/UX ===== */
+    :root{
+      --stage-finance:#747b84;
+      --stage-admin:#174f84;
+      --stage-director:#e8872f;
+      --stage-director-dark:#c96e1e;
+      --warning-bg:#fff7df;
+      --warning-border:#efcc72;
+      --warning-text:#755614;
+    }
+
+    .role-box{
+      width:min(880px,100%);
+    }
+    .role-box h1{
+      margin-bottom:24px;
+    }
+    .role-box>p,
+    .role-foot,
+    .role-step{
+      display:none!important;
+    }
+    .role-card-top{
+      justify-content:flex-start;
+      margin-bottom:15px;
+    }
+    .role-icon{
+      width:42px;
+      height:42px;
+      border-radius:11px;
+      font-size:14px;
+      line-height:1;
+    }
+
+    .role-card.role-finance::before{background:var(--stage-finance)}
+    .role-card.role-finance .role-icon{
+      background:#f0f2f4;
+      color:#5f6670;
+      box-shadow:inset 0 0 0 1px rgba(80,88,98,.08);
+    }
+    .role-card.role-finance:hover{border-color:#cfd4da}
+
+    .role-card.role-admin::before{background:var(--stage-admin)}
+    .role-card.role-admin .role-icon{
+      background:#edf4fb;
+      color:var(--stage-admin);
+      box-shadow:inset 0 0 0 1px rgba(23,79,132,.07);
+    }
+    .role-card.role-admin:hover{border-color:#bdd0e1}
+
+    .role-card.role-director::before{background:var(--stage-director)}
+    .role-card.role-director .role-icon{
+      background:#fff2e7;
+      color:var(--stage-director-dark);
+      box-shadow:inset 0 0 0 1px rgba(232,135,47,.10);
+    }
+    .role-card.role-director:hover{border-color:#efc49c}
+
+    .stage-nav{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      padding:4px;
+      border:1px solid #dde3eb;
+      border-radius:12px;
+      background:#f5f7fa;
+      box-shadow:inset 0 1px 2px rgba(20,35,50,.03);
+      flex:0 0 auto;
+    }
+    .stage-btn{
+      appearance:none;
+      height:30px;
+      padding:0 11px;
+      border-radius:8px;
+      border:0;
+      background:transparent;
+      color:#737c88;
+      font-size:11px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .stage-btn:hover{
+      background:#fff;
+      color:#3f4854;
+    }
+    .stage-btn.active[data-stage-role="financeiro"]{
+      background:#727982;
+      color:#fff;
+      box-shadow:0 3px 9px rgba(80,88,98,.18);
+    }
+    .stage-btn.active[data-stage-role="administracao"]{
+      background:var(--stage-admin);
+      color:#fff;
+      box-shadow:0 3px 9px rgba(23,79,132,.20);
+    }
+    .stage-btn.active[data-stage-role="diretoria"]{
+      background:var(--stage-director);
+      color:#fff;
+      box-shadow:0 3px 9px rgba(232,135,47,.22);
+    }
+
+    .role-badge{display:none!important}
+
+    #adminPanel .signature-row{
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    #adminPanel .signature-status{
+      grid-column:1/-1;
+      display:flex;
+      align-items:center;
+      min-height:38px;
+      padding:9px 10px;
+      border:1px solid #dce3eb;
+      border-radius:9px;
+      background:#f7f9fb;
+      font-size:13px;
+      font-weight:700;
+      color:#747d89;
+      white-space:normal;
+    }
+    #adminPanel .signature-status.added{
+      border-color:#b9dfcc;
+      background:#f1faf5;
+      color:#18744d;
+    }
+    #adminPanel .signature-row .btn{
+      width:100%;
+    }
+
+    .admin-tip{
+      margin-top:10px;
+      padding:10px 11px;
+      border:1px solid var(--warning-border);
+      border-radius:9px;
+      background:var(--warning-bg);
+      color:var(--warning-text);
+      box-shadow:none;
+      font-size:11.5px;
+      line-height:1.45;
+    }
+
+    .panel-actions{
+      justify-content:flex-end;
+    }
+    .clear-form{
+      flex:0 0 auto!important;
+      padding:8px 12px!important;
+      background:#f7f9fb!important;
+      color:#697381!important;
+      border:1px solid #dce3eb!important;
+      box-shadow:none!important;
+      font-size:12px!important;
+      font-weight:600!important;
+    }
+    .clear-form:hover:not(:disabled){
+      background:#eef2f6!important;
+      color:#4f5966!important;
+      transform:none!important;
+    }
+
+    .notice{
+      max-width:310px;
+      padding:6px 9px;
+      border-radius:8px;
+      background:#eef8f2;
+      border:1px solid #cce7d7;
+      color:#176a48;
+      line-height:1.3;
+    }
+
+    @media(max-width:1280px){
+      .stage-nav{
+        order:3;
+      }
+      .stage-btn{
+        padding:0 8px;
+      }
+    }
+
+    @media(max-width:1020px){
+      .stage-nav{
+        order:2;
+        width:100%;
+      }
+      .stage-btn{
+        flex:1 1 0;
+      }
+    }
+
+    @media(max-width:700px){
+      .role-grid{gap:10px}
+      .role-box h1{margin-bottom:18px}
+      .stage-nav{overflow-x:auto;justify-content:flex-start}
+      .stage-btn{min-width:105px}
+    }
+
   </style>
 </head>
 
@@ -573,29 +773,27 @@
     <div class="role-box">
       <div class="role-brand">ITAÚBA <span>INCORPORAÇÕES E CONSTRUÇÕES</span></div>
       <h1>Selecione a etapa do processo</h1>
-      <p>Escolha a área responsável. A interface exibirá somente os controles necessários para esta etapa.</p>
 
       <div class="role-grid">
         <button class="role-card role-finance" type="button" data-role="financeiro">
-          <div class="role-card-top"><span class="role-icon">01</span><span class="role-step">ETAPA 01</span></div>
+          <div class="role-card-top"><span class="role-icon">01</span></div>
           <strong>Financeiro</strong>
           <span>Preencha os dados da nota, inclua o Visto e aplique o primeiro carimbo no PDF.</span>
         </button>
 
         <button class="role-card role-admin" type="button" data-role="administracao">
-          <div class="role-card-top"><span class="role-icon">02</span><span class="role-step">ETAPA 02</span></div>
+          <div class="role-card-top"><span class="role-icon">02</span></div>
           <strong>Administração</strong>
           <span>Abra o PDF recebido do Financeiro e complete somente o Atesto e a data.</span>
         </button>
 
         <button class="role-card directoria role-director" type="button" data-role="diretoria">
-          <div class="role-card-top"><span class="role-icon">03</span><span class="role-step">ETAPA 03</span></div>
+          <div class="role-card-top"><span class="role-icon">03</span></div>
           <strong>Diretoria</strong>
           <span>Abra o PDF já vistado e atestado e aplique a conferência exclusiva da Diretoria.</span>
         </button>
       </div>
 
-      <div class="role-foot">Sem login e sem armazenamento: a etapa escolhida apenas organiza os controles exibidos na tela.</div>
     </div>
   </section>
 
@@ -607,7 +805,11 @@
       <span id="roleBadge" class="role-badge hidden"></span>
     </div>
 
-    <button id="changeRoleBtn" class="btn" type="button">Trocar etapa</button>
+    <nav id="stageNav" class="stage-nav" aria-label="Etapa do processo">
+      <button class="stage-btn" type="button" data-stage-role="financeiro">Financeiro</button>
+      <button class="stage-btn" type="button" data-stage-role="administracao">Administração</button>
+      <button class="stage-btn" type="button" data-stage-role="diretoria">Diretoria</button>
+    </nav>
 
     <label class="btn primary" for="pdfInput">Enviar PDF</label>
     <input id="pdfInput" class="file-input" type="file" accept="application/pdf">
@@ -686,18 +888,18 @@
             </div>
 
             <div class="field">
-              <div class="label-row"><label for="fCT">CT</label><span id="fCTCount" class="char-counter">0/24</span></div>
-              <input id="fCT" maxlength="24" placeholder="CT-2026-0148">
+              <div class="label-row"><label for="fCT">CT</label><span id="fCTCount" class="char-counter">0/16</span></div>
+              <input id="fCT" maxlength="16" placeholder="CT-2026-0148">
             </div>
 
             <div class="field">
-              <div class="label-row"><label for="fPedido">Pedido</label><span id="fPedidoCount" class="char-counter">0/24</span></div>
-              <input id="fPedido" maxlength="24" placeholder="PED-008752">
+              <div class="label-row"><label for="fPedido">Pedido</label><span id="fPedidoCount" class="char-counter">0/16</span></div>
+              <input id="fPedido" maxlength="16" placeholder="PED-008752">
             </div>
 
             <div class="field full">
-              <div class="label-row"><label for="fTitulo">Título</label><span id="fTituloCount" class="char-counter">0/34</span></div>
-              <input id="fTitulo" maxlength="34" placeholder="Medição 07/2026">
+              <div class="label-row"><label for="fTitulo">Título</label><span id="fTituloCount" class="char-counter">0/20</span></div>
+              <input id="fTitulo" maxlength="20" placeholder="Medição 07/2026">
             </div>
           </div>
         </div>
@@ -766,15 +968,12 @@
         </div>
 
         <div class="section">
-          <div class="admin-tip">
-            A borda pontilhada aparece somente durante a edição. Ela não será impressa no PDF final.
-          </div>
-        </div>
-
-        <div class="section">
           <div class="field">
             <label for="adminPageSelect">Página do Atesto</label>
             <select id="adminPageSelect" class="page-select" disabled></select>
+          </div>
+          <div class="admin-tip">
+            Atenção: a borda pontilhada aparece somente durante a edição e não será impressa no PDF final.
           </div>
         </div>
       </div>
@@ -797,8 +996,8 @@
         <div class="section">
           <div class="grid">
             <div class="field full">
-              <div class="label-row"><label for="dObs">Observações</label><span id="dObsCount" class="char-counter">0/180</span></div>
-              <textarea id="dObs" maxlength="180" placeholder="Ex.: Conferido. Liberado para pagamento."></textarea>
+              <div class="label-row"><label for="dObs">Observações</label><span id="dObsCount" class="char-counter">0/140</span></div>
+              <textarea id="dObs" maxlength="140" placeholder="Ex.: Conferido. Liberado para pagamento."></textarea>
             </div>
             <div class="field"><label for="dData">Data</label><input id="dData" type="date"></div>
           </div>
@@ -989,43 +1188,104 @@
       return lines.slice(0,maxLines);
     }
 
+    function wrapTextToWidths(text,widths,font="36px Roboto,Arial"){
+      const words=(text||"").trim().split(/\s+/).filter(Boolean);
+      const lines=[];
+      let index=0;
+
+      for(let lineIndex=0; lineIndex<widths.length; lineIndex++){
+        const maxWidth=widths[lineIndex];
+        let line="";
+
+        while(index<words.length){
+          const candidate=line ? `${line} ${words[index]}` : words[index];
+          if(textWidth(candidate,font)<=maxWidth){
+            line=candidate;
+            index++;
+          }else{
+            break;
+          }
+        }
+
+        if(!line && index<words.length){
+          line=fitLine(words[index],maxWidth,font);
+          index++;
+        }
+
+        if(lineIndex===widths.length-1 && index<words.length){
+          line=fitLine([line,...words.slice(index)].filter(Boolean).join(" "),maxWidth,font);
+          index=words.length;
+        }
+
+        lines.push(line);
+      }
+
+      return lines;
+    }
+
     function financeSvg(){
       const data = formatDate($("fData").value);
       const obra = $("fObra").value.trim();
       const recebido = $("fRecebido").value.trim();
-      const desc = wrapText($("fDescricao").value,1035,2);
-      const combined = [$("fCT").value.trim(),$("fPedido").value.trim(),$("fTitulo").value.trim()].filter(Boolean).join(" / ");
+      const desc = wrapTextToWidths($("fDescricao").value,[900,1090]);
+      const combinedRaw = [$("fCT").value.trim(),$("fPedido").value.trim(),$("fTitulo").value.trim()].filter(Boolean).join(" / ");
+      const combined = fitLine(combinedRaw,730);
       const vistoDate = formatDate($("fVistoData").value);
       const sign = state.signatures.financeiro || "";
 
       return `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" preserveAspectRatio="none">
+          <defs>
+            <clipPath id="finDataClip"><rect x="140" y="40" width="175" height="54"/></clipPath>
+            <clipPath id="finObraClip"><rect x="470" y="40" width="685" height="54"/></clipPath>
+            <clipPath id="finRecebidoClip"><rect x="225" y="126" width="930" height="54"/></clipPath>
+            <clipPath id="finDesc1Clip"><rect x="225" y="212" width="900" height="54"/></clipPath>
+            <clipPath id="finDesc2Clip"><rect x="42" y="298" width="1090" height="54"/></clipPath>
+            <clipPath id="finCombinedClip"><rect x="405" y="384" width="730" height="54"/></clipPath>
+            <clipPath id="finVistoDateClip"><rect x="855" y="470" width="285" height="54"/></clipPath>
+          </defs>
+
           <rect id="stampPaper" x="8" y="8" width="1184" height="664" rx="2" fill="rgba(255,255,255,.94)" stroke="#111" stroke-width="2.6"/>
+
+          <g stroke="#111" stroke-width="1.55" fill="none">
+            <line x1="8" y1="110" x2="1192" y2="110"/>
+            <line x1="8" y1="196" x2="1192" y2="196"/>
+            <line x1="8" y1="368" x2="1192" y2="368"/>
+            <line x1="8" y1="454" x2="1192" y2="454"/>
+            <line x1="8" y1="540" x2="1192" y2="540"/>
+            <line x1="8" y1="626" x2="1192" y2="626"/>
+
+            <line x1="330" y1="8" x2="330" y2="110"/>
+            <line x1="725" y1="454" x2="725" y2="540"/>
+            <line x1="725" y1="540" x2="725" y2="626"/>
+
+            <line x1="155" y1="526" x2="690" y2="526"/>
+            <line x1="155" y1="612" x2="690" y2="612"/>
+          </g>
+
           <g font-family="Calibri,Carlito,Arial,sans-serif" font-size="32" font-weight="700" fill="#111">
-            <text x="42" y="80">DATA:</text>
-            <text x="335" y="80">OBRA:</text>
-            <text x="42" y="166">RECEBIDO:</text>
-            <text x="42" y="252">DESCRIÇÃO:</text>
-            <text x="42" y="424">CT / PEDIDO / TÍTULO:</text>
-            <text x="42" y="510">VISTO:</text>
-            <text x="742" y="510">DATA:</text>
-            <text x="42" y="596">ATESTO:</text>
-            <text x="742" y="596">DATA:</text>
+            <text x="42" y="78">DATA:</text>
+            <text x="360" y="78">OBRA:</text>
+            <text x="42" y="164">RECEBIDO:</text>
+            <text x="42" y="250">DESCRIÇÃO:</text>
+            <text x="42" y="422">CT / PEDIDO / TÍTULO:</text>
+            <text x="42" y="508">VISTO:</text>
+            <text x="760" y="508">DATA:</text>
+            <text x="42" y="594">ATESTO:</text>
+            <text x="760" y="594">DATA:</text>
           </g>
+
           <g font-family="Roboto,Arial,sans-serif" font-size="36" font-weight="500" fill="#092c56">
-            <text x="145" y="80">${escapeXml(data)}</text>
-            <text x="435" y="80">${escapeXml(fitLine(obra,720))}</text>
-            <text x="225" y="166">${escapeXml(fitLine(recebido,930))}</text>
-            <text x="225" y="252">${escapeXml(desc[0]||"")}</text>
-            <text x="42" y="338">${escapeXml(desc[1]||"")}</text>
-            <text x="405" y="424">${escapeXml(fitLine(combined,750))}</text>
-            <text x="855" y="510">${escapeXml(vistoDate)}</text>
+            <text x="145" y="78" clip-path="url(#finDataClip)">${escapeXml(data)}</text>
+            <text x="470" y="78" clip-path="url(#finObraClip)">${escapeXml(fitLine(obra,675))}</text>
+            <text x="225" y="164" clip-path="url(#finRecebidoClip)">${escapeXml(fitLine(recebido,920))}</text>
+            <text x="225" y="250" clip-path="url(#finDesc1Clip)">${escapeXml(desc[0]||"")}</text>
+            <text x="42" y="336" clip-path="url(#finDesc2Clip)">${escapeXml(desc[1]||"")}</text>
+            <text x="405" y="422" clip-path="url(#finCombinedClip)">${escapeXml(combined)}</text>
+            <text x="855" y="508" clip-path="url(#finVistoDateClip)">${escapeXml(vistoDate)}</text>
           </g>
-          ${sign ? `<image href="${sign}" x="155" y="448" width="535" height="82" preserveAspectRatio="xMinYMid meet"/>` : ""}
-          <g stroke="#111" stroke-width="1.6">
-            <line x1="155" y1="528" x2="690" y2="528"/>
-            <line x1="155" y1="614" x2="690" y2="614"/>
-          </g>
+
+          ${sign ? `<image href="${sign}" x="155" y="460" width="535" height="64" preserveAspectRatio="xMinYMid meet"/>` : ""}
         </svg>`;
     }
 
@@ -1040,32 +1300,45 @@
     }
 
     function directorSvg(){
-      const lines = wrapText($("dObs").value,1055,3);
+      const lines = wrapTextToWidths($("dObs").value,[810,1070,1070],"35px Roboto,Arial");
       const date = formatDate($("dData").value);
       const sign = state.signatures.diretoria || "";
+
       return `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" preserveAspectRatio="none">
+          <defs>
+            <clipPath id="dirObs1Clip"><rect x="295" y="125" width="810" height="54"/></clipPath>
+            <clipPath id="dirObs2Clip"><rect x="52" y="208" width="1070" height="54"/></clipPath>
+            <clipPath id="dirObs3Clip"><rect x="52" y="291" width="1070" height="54"/></clipPath>
+            <clipPath id="dirDateClip"><rect x="930" y="408" width="210" height="54"/></clipPath>
+          </defs>
+
           <rect id="stampPaper" x="8" y="8" width="1184" height="544" rx="3" fill="rgba(255,255,255,.94)" stroke="#b42318" stroke-width="3"/>
           <rect x="27" y="27" width="1146" height="506" fill="none" stroke="#b42318" stroke-width="1.5"/>
+
           <g fill="#b42318" font-family="Calibri,Carlito,Arial,sans-serif" font-weight="700">
             <text x="52" y="78" font-size="40">CONFERÊNCIA DA DIRETORIA</text>
             <text x="52" y="165" font-size="32">OBSERVAÇÕES:</text>
             <text x="52" y="448" font-size="32">ASSINATURA:</text>
             <text x="820" y="448" font-size="32">DATA:</text>
           </g>
-          <g fill="#7a1f1a" font-family="Roboto,Arial,sans-serif" font-size="35" font-weight="500">
-            <text x="295" y="165">${escapeXml(lines[0]||"")}</text>
-            <text x="52" y="248">${escapeXml(lines[1]||"")}</text>
-            <text x="52" y="331">${escapeXml(lines[2]||"")}</text>
-            <text x="930" y="448">${escapeXml(date)}</text>
+
+          <g fill="#111" font-family="Roboto,Arial,sans-serif" font-size="35" font-weight="500">
+            <text x="295" y="165" clip-path="url(#dirObs1Clip)">${escapeXml(lines[0]||"")}</text>
+            <text x="52" y="248" clip-path="url(#dirObs2Clip)">${escapeXml(lines[1]||"")}</text>
+            <text x="52" y="331" clip-path="url(#dirObs3Clip)">${escapeXml(lines[2]||"")}</text>
+            <text x="930" y="448" clip-path="url(#dirDateClip)">${escapeXml(date)}</text>
           </g>
+
           ${sign ? `<image href="${sign}" x="245" y="375" width="525" height="92" preserveAspectRatio="xMinYMid meet"/>` : ""}
+
           <g stroke="#b42318" stroke-width="2">
             <line x1="295" y1="180" x2="1135" y2="180"/>
             <line x1="52" y1="263" x2="1135" y2="263"/>
             <line x1="52" y1="346" x2="1135" y2="346"/>
             <line x1="245" y1="469" x2="770" y2="469"/>
           </g>
+
           <text x="52" y="510" fill="#b42318" font-family="Calibri,Carlito,Arial,sans-serif" font-size="24" font-weight="700">DIRETORIA</text>
         </svg>`;
     }
@@ -1126,11 +1399,21 @@
       els.emptyTitle.textContent=meta.emptyTitle;
       els.emptyText.textContent=meta.emptyText;
       els.emptyState.style.display="grid";
+      updateStageNav();
       renderActiveSvg();
     }
 
+    function updateStageNav(){
+      document.querySelectorAll(".stage-btn").forEach(btn=>{
+        btn.classList.toggle("active",btn.dataset.stageRole===state.role);
+      });
+    }
+
     document.querySelectorAll(".role-card").forEach(btn=>btn.addEventListener("click",()=>chooseRole(btn.dataset.role,true)));
-    $("changeRoleBtn").addEventListener("click",()=>{ els.roleScreen.classList.remove("hidden"); });
+    document.querySelectorAll(".stage-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      if(btn.dataset.stageRole===state.role) return;
+      chooseRole(btn.dataset.stageRole,false);
+    }));
 
     function activePageSelect(){
       return state.role==="financeiro" ? $("financePageSelect") : state.role==="administracao" ? $("adminPageSelect") : $("directorPageSelect");
@@ -1311,7 +1594,7 @@
     const sigCtx=els.sigCanvas.getContext("2d");
     function setupPen(){
       sigCtx.lineWidth=5;sigCtx.lineCap="round";sigCtx.lineJoin="round";
-      sigCtx.strokeStyle=state.signingTarget==="diretoria"?"#b42318":"#092c56";
+      sigCtx.strokeStyle="#111111";
     }
     function clearPad(){
       sigCtx.clearRect(0,0,els.sigCanvas.width,els.sigCanvas.height);
@@ -1348,7 +1631,22 @@
       const pad=14;
       left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(c.width-1,right+pad);bottom=Math.min(c.height-1,bottom+pad);
       const out=document.createElement("canvas");out.width=right-left+1;out.height=bottom-top+1;
-      out.getContext("2d").drawImage(c,left,top,out.width,out.height,0,0,out.width,out.height);
+      const outCtx=out.getContext("2d");
+      outCtx.drawImage(c,left,top,out.width,out.height,0,0,out.width,out.height);
+
+      const normalized=outCtx.getImageData(0,0,out.width,out.height);
+      const pixels=normalized.data;
+      for(let i=0;i<pixels.length;i+=4){
+        const r=pixels[i],g=pixels[i+1],b=pixels[i+2],a=pixels[i+3];
+        if(a<=20 || (r>245 && g>245 && b>245)){
+          pixels[i+3]=0;
+        }else{
+          pixels[i]=0;
+          pixels[i+1]=0;
+          pixels[i+2]=0;
+        }
+      }
+      outCtx.putImageData(normalized,0,0);
       return out.toDataURL("image/png");
     }
 
@@ -1516,7 +1814,14 @@
         a.href=url;a.download=base+roleMeta[state.role].suffix;
         document.body.appendChild(a);a.click();a.remove();
         setTimeout(()=>URL.revokeObjectURL(url),1500);
-        els.notice.classList.add("show");setTimeout(()=>els.notice.classList.remove("show"),2500);
+        const doneMessages={
+          financeiro:"PDF gerado. Encaminhe para a Administração.",
+          administracao:"PDF gerado. Encaminhe para a Diretoria.",
+          diretoria:"PDF final gerado."
+        };
+        els.notice.textContent=doneMessages[state.role];
+        els.notice.classList.add("show");
+        setTimeout(()=>els.notice.classList.remove("show"),4200);
       }catch(err){
         console.error(err);alert("Não foi possível gerar o PDF. Verifique o arquivo e tente novamente.");
       }finally{

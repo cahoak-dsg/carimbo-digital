@@ -1,5 +1,30 @@
-# Carimbo de Notas - versão 17
+# Carimbo Digital - Itaúba
 
-Refinamento visual da versão 16, mantendo a mesma lógica de Financeiro, Administração e Diretoria.
+Ferramenta web para aplicação de carimbo digital em notas fiscais em PDF.
 
-Principais ajustes: hierarquia visual, tela de seleção de etapa, cabeçalho, cards, painel lateral, espaçamentos, sombras e arredondamentos.
+## Objetivo
+
+Substituir o processo manual de imprimir a nota, aplicar o carimbo físico, preencher os campos, coletar assinaturas e digitalizar novamente.
+
+Todo o processamento é feito diretamente no navegador.
+
+## Funcionalidades
+
+- Envio de nota fiscal em PDF.
+- Visualização das páginas do documento.
+- Aplicação do carimbo digital.
+- Preenchimento dos dados do carimbo.
+- Inclusão de assinaturas desenhadas ou enviadas em imagem.
+- Posicionamento e redimensionamento do carimbo.
+- Escolha da página onde o carimbo será aplicado.
+- Download do PDF final carimbado.
+
+## Privacidade
+
+Os documentos e assinaturas são processados localmente no navegador. A ferramenta não mantém histórico nem armazena os PDFs em servidor.
+
+## Publicação
+
+A aplicação é estática e pode ser publicada pelo GitHub Pages.
+
+Use o arquivo `index.html` na raiz do repositório.
