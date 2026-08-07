@@ -1,682 +1,855 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Carimbo de Notas - Itaúba Incorporações e Construções</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
   <style>
-    :root {
-      --bg: #f3f5f8;
-      --panel: #ffffff;
-      --ink: #202124;
-      --muted: #6b7280;
-      --line: #d8dce3;
-      --accent: #2856d8;
-      --accent-dark: #1f46b4;
-      --danger: #bd2c2c;
-      --shadow: 0 8px 28px rgba(20, 30, 55, .10);
-      --radius: 14px;
+    :root{
+      --bg:#f3f5f8;
+      --panel:#fff;
+      --ink:#202124;
+      --muted:#687080;
+      --line:#d8dce3;
+      --blue:#2856d8;
+      --blue-dark:#1f46b4;
+      --green:#18864b;
+      --green-dark:#116b3a;
+      --red:#b42318;
+      --red-dark:#8f1c14;
+      --response:#092c56;
+      --shadow:0 8px 28px rgba(20,30,55,.10);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+    button,input,textarea,select{font:inherit}
+    button{border:0}
+    .hidden{display:none!important}
+
+    .topbar{
+      position:sticky;top:0;z-index:40;
+      display:flex;align-items:center;gap:9px;
+      padding:10px 14px;background:rgba(255,255,255,.97);
+      border-bottom:1px solid var(--line);backdrop-filter:blur(8px)
+    }
+    .brand{display:flex;flex-direction:column;margin-right:auto;min-width:320px}
+    .brand strong{font-size:15px;line-height:1.25}
+    .brand span{font-size:12px;color:var(--muted);line-height:1.3;margin-top:2px}
+    .role-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 9px;border-radius:999px;background:#f4f6fa;
+      border:1px solid var(--line);font-size:11px;font-weight:700;color:#4b5362;
+      margin-top:5px;width:max-content
     }
 
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Calibri, Carlito, Arial, sans-serif;
-      color: var(--ink);
-      background: var(--bg);
+    .btn{
+      appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+      border-radius:8px;cursor:pointer;transition:.15s ease;white-space:nowrap
     }
-    button, input, textarea, select { font: inherit; }
+    .topbar>.btn,.topbar>label.btn{
+      width:138px;height:36px;display:inline-flex;align-items:center;justify-content:center;
+      flex:0 0 138px;padding:0 10px;border-radius:8px;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      font-size:13px;font-weight:600;line-height:1
+    }
+    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+    .btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+    .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+    .btn.primary:hover:not(:disabled){background:var(--blue-dark)}
+    .btn.success{background:var(--green);border-color:var(--green);color:#fff}
+    .btn.success:hover:not(:disabled){background:var(--green-dark)}
+    .btn.director{background:var(--red);border-color:var(--red);color:#fff}
+    .btn.director:hover:not(:disabled){background:var(--red-dark)}
+    .btn.danger{color:var(--red);background:#fff}
+    .btn.compact{padding:7px 10px;font-size:12px;font-weight:600}
+    .btn.active{border-color:var(--blue);background:#eef3ff;color:#2349bd;font-weight:700}
+    .file-input{display:none}
 
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      background: rgba(255,255,255,.96);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(8px);
+    .layout{
+      display:grid;grid-template-columns:minmax(0,1fr) 390px;
+      gap:16px;padding:16px;min-height:calc(100vh - 58px)
     }
-    .brand {
-      display: flex;
-      flex-direction: column;
-      margin-right: auto;
-      min-width: 170px;
+    .viewer-card,.panel-card{
+      background:var(--panel);border:1px solid var(--line);border-radius:14px;
+      box-shadow:var(--shadow)
     }
-    .brand strong { font-size: 16px; }
-    .brand span { font-size: 12px; color: var(--muted); }
-
-    .btn {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--ink);
-      padding: 9px 12px;
-      border-radius: 9px;
-      cursor: pointer;
-      transition: .15s ease;
-      white-space: nowrap;
+    .viewer-card{min-width:0;display:flex;flex-direction:column;overflow:hidden}
+    .viewer-toolbar{
+      display:flex;align-items:center;gap:8px;padding:10px 12px;
+      border-bottom:1px solid var(--line);background:#fafbfc
     }
-    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-    .btn:disabled { opacity: .45; cursor: not-allowed; }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .btn.primary:hover:not(:disabled) { background: var(--accent-dark); }
-    .btn.success { background: #18864b; border-color: #18864b; color: #fff; }
-    .btn.success:hover:not(:disabled) { background: #116b3a; border-color: #116b3a; }
-    .btn.danger { color: var(--danger); }
-    .btn.compact { padding: 7px 9px; font-size: 13px; }
-
-    .topbar > .btn {
-      width: 140px;
-      height: 36px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 140px;
-      padding: 0 10px;
-      border-radius: 8px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1;
-    }
-    label.topbar-upload,
-    .topbar > label.btn {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .btn.active {
-      border-color: var(--accent);
-      background: #eef3ff;
-      color: var(--accent-dark);
-      font-weight: 700;
-    }
-    .file-input { display: none; }
-
-    .panel-actions,
-    .size-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .panel-actions .btn {
-      flex: 1 1 150px;
-    }
-    .size-buttons .btn {
-      flex: 1 1 85px;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 390px;
-      gap: 16px;
-      padding: 16px;
-      min-height: calc(100vh - 66px);
-    }
-    .viewer-card, .panel-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .viewer-card {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .viewer-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--line);
-      background: #fafbfc;
-    }
-    .viewer-toolbar .spacer { flex: 1; }
-    .page-info { color: var(--muted); font-size: 13px; }
-
-    .document-area {
-      position: relative;
-      flex: 1;
-      min-height: 620px;
-      overflow: auto;
-      padding: 26px;
+    .viewer-toolbar .spacer{flex:1}
+    .page-info{font-size:13px;color:var(--muted)}
+    .document-area{
+      position:relative;flex:1;min-height:620px;overflow:auto;padding:26px;
       background:
-        linear-gradient(45deg, #eceff3 25%, transparent 25%),
-        linear-gradient(-45deg, #eceff3 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #eceff3 75%),
-        linear-gradient(-45deg, transparent 75%, #eceff3 75%);
-      background-size: 24px 24px;
-      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+        linear-gradient(45deg,#eceff3 25%,transparent 25%),
+        linear-gradient(-45deg,#eceff3 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#eceff3 75%),
+        linear-gradient(-45deg,transparent 75%,#eceff3 75%);
+      background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0
     }
-    .page-shell {
-      position: relative;
-      width: fit-content;
-      margin: 0 auto;
-      background: #fff;
-      box-shadow: 0 10px 32px rgba(0,0,0,.18);
+    .page-shell{position:relative;width:fit-content;margin:0 auto;background:#fff;box-shadow:0 10px 32px rgba(0,0,0,.18)}
+    #pdfCanvas{display:block;max-width:none}
+    .empty-state{
+      position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+      padding:40px;color:var(--muted);pointer-events:none
     }
-    #pdfCanvas {
-      display: block;
-      max-width: none;
+    .empty-state strong{display:block;color:var(--ink);font-size:20px;margin-bottom:7px}
+    .empty-state span{font-size:13px;line-height:1.55}
+
+    #overlay{
+      position:absolute;left:30px;top:30px;width:520px;height:295px;
+      user-select:none;touch-action:none;cursor:move;z-index:10;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.13))
     }
-    .empty-state {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
+    #overlay.hidden{display:none}
+    #overlay.admin-guide{outline:2px dashed rgba(40,86,216,.65);outline-offset:3px;filter:none}
+    #activeSvg{display:block;width:100%;height:100%;overflow:visible}
+    .resize-handle{
+      position:absolute;right:-7px;bottom:-7px;width:17px;height:17px;border-radius:50%;
+      background:var(--blue);border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.22);cursor:nwse-resize
     }
-    .empty-state strong {
-      display: block;
-      color: var(--ink);
-      font-size: 20px;
-      margin-bottom: 6px;
+    #overlay[data-mode="diretoria"] .resize-handle{background:var(--red)}
+
+    .panel-card{padding:15px;overflow:auto;max-height:calc(100vh - 92px)}
+    .panel-card h2{margin:0 0 4px;font-size:18px}
+    .helper{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.45}
+    .instructions{
+      margin:0 0 16px;padding:12px 13px;border:1px solid #dbe2f2;border-radius:10px;
+      background:#f8faff;color:#485268;font-size:12px;line-height:1.5
+    }
+    .instructions.red{border-color:#f0d0cc;background:#fff8f7;color:#64332e}
+    .instructions strong{display:block;margin-bottom:5px;color:var(--ink);font-size:13px}
+    .instructions ol{margin:0;padding-left:18px}.instructions li+li{margin-top:3px}
+    .section{padding:14px 0;border-top:1px solid var(--line)}
+    .section:first-of-type{border-top:0;padding-top:0}
+    .section-title{font-weight:700;font-size:14px;margin-bottom:10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field.full{grid-column:1/-1}
+    label{font-size:12px;font-weight:700;color:#404653}
+    input,textarea,select{
+      width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+      background:#fff;color:var(--ink);outline:none
+    }
+    textarea{min-height:86px;resize:vertical}
+    input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(40,86,216,.10)}
+    .director-panel input:focus,.director-panel textarea:focus,.director-panel select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(180,35,24,.10)}
+    .label-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .char-counter{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .char-counter.near{color:#a26000;font-weight:700}.char-counter.limit{color:var(--red);font-weight:700}
+    .signature-row{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center}
+    .signature-status{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .signature-status.added{color:var(--green);font-weight:700}
+    .size-buttons,.panel-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .size-buttons .btn{flex:1 1 85px}
+    .panel-actions .btn{flex:1 1 150px}
+    .privacy{margin-top:12px;padding:10px;border-radius:9px;background:#f6f7f9;color:#4d5562;font-size:12px;line-height:1.45}
+    .admin-tip{padding:11px;border:1px dashed #b8c4dc;border-radius:9px;background:#fbfcff;color:#536077;font-size:12px;line-height:1.45}
+
+    .role-screen{
+      position:fixed;inset:0;z-index:100;background:rgba(244,246,249,.98);
+      display:grid;place-items:center;padding:24px
+    }
+    .role-box{
+      width:min(850px,100%);background:#fff;border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 18px 70px rgba(21,31,50,.14);padding:28px
+    }
+    .role-box h1{margin:0;font-size:25px;line-height:1.2}
+    .role-box>p{margin:8px 0 22px;color:var(--muted);font-size:14px}
+    .role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .role-card{
+      text-align:left;padding:18px;border:1px solid var(--line);border-radius:13px;
+      background:#fff;cursor:pointer;transition:.15s ease;min-height:150px
+    }
+    .role-card:hover{transform:translateY(-2px);box-shadow:0 9px 24px rgba(30,42,70,.10);border-color:#b8c4dc}
+    .role-card.directoria:hover{border-color:#e2aaa4}
+    .role-icon{
+      display:grid;place-items:center;width:34px;height:34px;border-radius:9px;
+      background:#eef3ff;color:var(--blue);font-weight:800;font-size:13px;margin-bottom:13px
+    }
+    .role-card.directoria .role-icon{background:#fff0ee;color:var(--red)}
+    .role-card strong{display:block;font-size:16px;margin-bottom:7px}
+    .role-card span{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+    .role-foot{margin-top:18px;padding-top:15px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+
+    dialog{border:0;border-radius:14px;padding:0;box-shadow:0 20px 70px rgba(0,0,0,.30);width:min(560px,calc(100vw - 28px))}
+    dialog::backdrop{background:rgba(12,18,30,.55)}
+    .dialog-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .dialog-body{padding:16px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+    #signatureCanvas{width:100%;height:220px;display:block;border:1px dashed #9aa3b2;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair}
+    .upload-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+    .notice{display:none;font-size:12px;color:var(--green);font-weight:700}.notice.show{display:inline}
+
+    @media(max-width:1200px){
+      .topbar>.btn,.topbar>label.btn{width:124px;flex-basis:124px}
+      .brand{min-width:280px}
+    }
+    @media(max-width:1020px){
+      .layout{grid-template-columns:1fr}.panel-card{max-height:none}
+      .document-area{min-height:560px}.topbar{flex-wrap:wrap}.brand{width:100%}
+    }
+    @media(max-width:700px){
+      .role-grid{grid-template-columns:1fr}.role-card{min-height:auto}
+      .role-box{padding:20px}.role-box h1{font-size:21px}
+      .topbar>.btn,.topbar>label.btn{width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
+      .layout{padding:8px;gap:8px}.document-area{padding:12px;min-height:480px}
+      .grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+      #overlay{width:330px;height:187px}
+    }
+  
+    /* ===== V17 · refinamento de UI / identidade Itaúba ===== */
+    :root{
+      --itauba-navy:#092c56;
+      --itauba-navy-2:#143e68;
+      --itauba-blue-soft:#eef4fb;
+      --itauba-line:#dbe4ef;
+      --itauba-surface:#f7f9fc;
+      --itauba-dark:#17212d;
+      --itauba-red:#b42318;
+      --shadow-soft:0 10px 30px rgba(14,39,72,.08);
+      --shadow-card:0 14px 34px rgba(14,39,72,.11);
+      --shadow-hover:0 18px 42px rgba(14,39,72,.15);
     }
 
-    #stampOverlay {
-      position: absolute;
-      left: 30px;
-      top: 30px;
-      width: 500px;
-      height: 225px;
-      user-select: none;
-      touch-action: none;
-      cursor: move;
-      z-index: 10;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,.16));
-    }
-    #stampOverlay.hidden { display: none; }
-    #stampSvg {
-      display: block;
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-    .resize-handle {
-      position: absolute;
-      right: -7px;
-      bottom: -7px;
-      width: 17px;
-      height: 17px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.22);
-      cursor: nwse-resize;
+    body{
+      background:
+        radial-gradient(circle at 8% 0%, rgba(9,44,86,.055), transparent 30%),
+        linear-gradient(180deg,#f7f9fc 0%,#f2f5f9 100%);
     }
 
-    .panel-card {
-      padding: 15px;
-      overflow: auto;
-      max-height: calc(100vh - 98px);
-    }
-    .panel-card h2 {
-      margin: 0 0 4px;
-      font-size: 18px;
-    }
-    .panel-card .helper {
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .section {
-      padding: 14px 0;
-      border-top: 1px solid var(--line);
-    }
-    .section:first-of-type { border-top: 0; padding-top: 0; }
-    .section-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field.full { grid-column: 1 / -1; }
-    label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #404653;
-    }
-    input, textarea, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 9px 10px;
-      background: #fff;
-      color: var(--ink);
-      outline: none;
-    }
-    textarea { min-height: 70px; resize: vertical; }
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(40,86,216,.12);
+    .topbar{
+      padding:12px 16px;
+      border-bottom:1px solid rgba(9,44,86,.10);
+      box-shadow:0 6px 22px rgba(9,44,86,.055);
     }
 
-    .signature-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      gap: 7px;
-      align-items: center;
-      margin-bottom: 8px;
+    .brand{
+      min-width:360px;
+      padding-left:13px;
+      position:relative;
     }
-    .signature-status {
-      min-width: 0;
-      font-size: 12px;
-      color: var(--muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .brand::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:2px;
+      bottom:2px;
+      width:4px;
+      border-radius:10px;
+      background:var(--itauba-navy);
     }
-    .signature-status.added {
-      color: #18864b;
-      font-weight: 700;
+    .brand-kicker{
+      font-size:9px;
+      line-height:1;
+      letter-spacing:.16em;
+      font-weight:800;
+      color:var(--itauba-navy);
+      margin-bottom:4px;
     }
-
-    .label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+    .brand strong{
+      color:var(--itauba-dark);
+      font-size:15px;
+      letter-spacing:-.015em;
     }
-    .char-counter {
-      font-size: 11px;
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
+    .brand span:not(.role-badge){
+      color:#6d7685;
     }
-    .char-counter.near-limit {
-      color: #a26000;
-      font-weight: 700;
-    }
-    .char-counter.at-limit {
-      color: var(--danger);
-      font-weight: 700;
-    }
-
-    .instructions {
-      margin: 0 0 16px;
-      padding: 12px 13px;
-      border: 1px solid #dce4f2;
-      border-radius: 10px;
-      background: #f8faff;
-      color: #34425f;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-    .instructions strong {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--ink);
-      font-size: 13px;
-    }
-    .instructions ol {
-      margin: 0;
-      padding-left: 18px;
-    }
-    .instructions li + li {
-      margin-top: 3px;
+    .role-badge{
+      margin-top:6px;
+      padding:5px 9px;
+      background:var(--itauba-blue-soft);
+      border-color:#d8e4f1;
+      color:var(--itauba-navy);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);
     }
 
-    .privacy {
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 9px;
-      background: #f2f6ff;
-      color: #34425f;
-      font-size: 12px;
-      line-height: 1.45;
+    .topbar>.btn,.topbar>label.btn{
+      border-radius:10px;
+      height:36px;
+      font-size:12.5px;
+      box-shadow:0 2px 7px rgba(9,44,86,.035);
+    }
+    .topbar>.btn:hover:not(:disabled),
+    .topbar>label.btn:hover:not(:disabled){
+      box-shadow:0 7px 18px rgba(9,44,86,.12);
     }
 
-    dialog {
-      border: 0;
-      border-radius: 14px;
-      padding: 0;
-      box-shadow: 0 20px 70px rgba(0,0,0,.30);
-      width: min(560px, calc(100vw - 28px));
+    .btn.primary{
+      background:var(--itauba-navy);
+      border-color:var(--itauba-navy);
     }
-    dialog::backdrop { background: rgba(12,18,30,.55); }
-    .dialog-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
+    .btn.primary:hover:not(:disabled){background:#071f3d}
+    .btn.success{
+      background:#1d8055;
+      border-color:#1d8055;
     }
-    .dialog-body { padding: 16px; }
-    .dialog-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 12px 16px;
-      border-top: 1px solid var(--line);
+    .btn.success:hover:not(:disabled){background:#176b48}
+    .btn.director{
+      background:var(--itauba-red);
+      border-color:var(--itauba-red);
     }
-    #signatureCanvas {
-      width: 100%;
-      height: 220px;
-      display: block;
-      border: 1px dashed #9aa3b2;
-      border-radius: 10px;
-      background: #fff;
-      touch-action: none;
-      cursor: crosshair;
-    }
-    .upload-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .notice {
-      display: none;
-      margin-left: 8px;
-      font-size: 13px;
-      color: #246b3c;
-    }
-    .notice.show { display: inline; }
 
-    @media (max-width: 980px) {
-      .layout { grid-template-columns: 1fr; }
-      .panel-card { max-height: none; }
-      .document-area { min-height: 560px; }
+    .layout{
+      gap:18px;
+      padding:18px;
     }
-    @media (max-width: 650px) {
-      .topbar { flex-wrap: wrap; }
-      .brand { width: 100%; }
-      .topbar > .btn {
-        width: calc(50% - 5px);
-        flex: 1 1 calc(50% - 5px);
-      }
-      .layout { padding: 8px; gap: 8px; }
-      .document-area { padding: 12px; min-height: 480px; }
-      .grid { grid-template-columns: 1fr; }
-      .field.full { grid-column: auto; }
-      #stampOverlay { width: 340px; height: 166px; }
+    .viewer-card,.panel-card{
+      border-radius:18px;
+      border-color:rgba(9,44,86,.10);
+      box-shadow:var(--shadow-soft);
     }
+    .viewer-card{overflow:hidden}
+    .viewer-toolbar{
+      min-height:50px;
+      padding:10px 14px;
+      background:linear-gradient(180deg,#ffffff,#fbfcfe);
+      border-bottom-color:rgba(9,44,86,.09);
+    }
+    .document-area{
+      background-color:#eef2f6;
+      background-image:
+        linear-gradient(45deg,rgba(9,44,86,.035) 25%,transparent 25%),
+        linear-gradient(-45deg,rgba(9,44,86,.035) 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,rgba(9,44,86,.035) 75%),
+        linear-gradient(-45deg,transparent 75%,rgba(9,44,86,.035) 75%);
+    }
+    .page-shell{
+      border-radius:3px;
+      overflow:visible;
+      box-shadow:0 18px 45px rgba(18,31,48,.20);
+    }
+
+    .panel-card{
+      padding:18px;
+      background:rgba(255,255,255,.97);
+    }
+    .panel-card h2{
+      color:var(--itauba-dark);
+      font-size:19px;
+      letter-spacing:-.02em;
+      margin-bottom:5px;
+    }
+    .helper{
+      color:#6b7482;
+      margin-bottom:18px;
+    }
+    .section{
+      padding:16px 0;
+      border-top-color:rgba(9,44,86,.09);
+    }
+    .section-title{
+      color:#2c3745;
+      font-size:13px;
+      letter-spacing:.01em;
+    }
+    label{
+      color:#46515f;
+      font-size:11.5px;
+      letter-spacing:.005em;
+    }
+    input,textarea,select{
+      min-height:39px;
+      border-radius:10px;
+      border-color:#dce3ec;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(22,33,48,.02);
+    }
+    input:hover,textarea:hover,select:hover{
+      border-color:#c9d4e1;
+    }
+    input:focus,textarea:focus,select:focus{
+      border-color:var(--itauba-navy);
+      box-shadow:0 0 0 3px rgba(9,44,86,.08);
+    }
+
+    .instructions{
+      position:relative;
+      padding:14px 14px 14px 16px;
+      border-radius:12px;
+      background:linear-gradient(180deg,#f8fbff,#f5f8fc);
+      border-color:#d9e5f1;
+      color:#536174;
+      box-shadow:inset 3px 0 0 var(--itauba-navy);
+    }
+    .instructions strong{
+      color:var(--itauba-navy);
+      margin-bottom:7px;
+    }
+    .instructions.red{
+      background:linear-gradient(180deg,#fff9f8,#fff6f5);
+      box-shadow:inset 3px 0 0 var(--itauba-red);
+    }
+    .instructions.red strong{color:var(--itauba-red)}
+
+    .admin-tip{
+      border-radius:11px;
+      border-color:#bfcde0;
+      background:#f8fbff;
+      color:#536174;
+      box-shadow:inset 3px 0 0 #6f86a4;
+    }
+
+    .privacy{
+      border-radius:11px;
+      background:#f7f9fb;
+      border:1px solid rgba(9,44,86,.065);
+      color:#687280;
+    }
+
+    .btn{
+      border-radius:9px;
+      border-color:#d9e0e8;
+    }
+    .btn.compact{
+      border-radius:8px;
+    }
+
+    .role-screen{
+      background:
+        radial-gradient(circle at 15% 20%,rgba(9,44,86,.10),transparent 34%),
+        radial-gradient(circle at 92% 88%,rgba(9,44,86,.055),transparent 29%),
+        linear-gradient(145deg,#f7f9fc,#eef3f8);
+    }
+    .role-screen::before{
+      content:"";
+      position:fixed;
+      inset:auto 0 0 0;
+      height:7px;
+      background:var(--itauba-navy);
+      opacity:.95;
+    }
+    .role-box{
+      width:min(900px,100%);
+      border-radius:22px;
+      padding:32px;
+      border-color:rgba(9,44,86,.10);
+      box-shadow:0 25px 80px rgba(9,44,86,.16);
+      position:relative;
+      overflow:hidden;
+    }
+    .role-box::after{
+      content:"";
+      position:absolute;
+      width:210px;
+      height:210px;
+      right:-100px;
+      top:-105px;
+      border-radius:50%;
+      background:rgba(9,44,86,.035);
+      pointer-events:none;
+    }
+    .role-brand{
+      display:flex;
+      align-items:baseline;
+      gap:7px;
+      margin-bottom:11px;
+      color:var(--itauba-navy);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+    }
+    .role-brand span{
+      font-size:8px;
+      letter-spacing:.12em;
+      color:#7a8491;
+      font-weight:800;
+    }
+    .role-box h1{
+      color:var(--itauba-dark);
+      font-size:27px;
+      letter-spacing:-.035em;
+      max-width:620px;
+    }
+    .role-box>p{
+      max-width:650px;
+      color:#697483;
+      margin-top:9px;
+      margin-bottom:25px;
+    }
+    .role-grid{
+      gap:14px;
+    }
+    .role-card{
+      position:relative;
+      min-height:175px;
+      padding:18px 18px 20px;
+      border-radius:16px;
+      border-color:#dde4ec;
+      box-shadow:0 6px 18px rgba(9,44,86,.045);
+      overflow:hidden;
+    }
+    .role-card::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:4px;
+      background:var(--itauba-navy);
+      opacity:.88;
+    }
+    .role-card:hover{
+      transform:translateY(-3px);
+      border-color:#c7d4e3;
+      box-shadow:var(--shadow-hover);
+    }
+    .role-card.directoria::before{background:var(--itauba-red)}
+    .role-card.directoria:hover{border-color:#e3b5af}
+    .role-card-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .role-icon{
+      margin:0;
+      width:38px;
+      height:38px;
+      border-radius:11px;
+      background:var(--itauba-blue-soft);
+      color:var(--itauba-navy);
+      box-shadow:inset 0 0 0 1px rgba(9,44,86,.055);
+    }
+    .role-step{
+      font-size:9px!important;
+      line-height:1!important;
+      letter-spacing:.12em;
+      font-weight:800;
+      color:#8a94a0!important;
+    }
+    .role-card.directoria .role-icon{
+      background:#fff0ee;
+      color:var(--itauba-red);
+    }
+    .role-card strong{
+      color:var(--itauba-dark);
+      font-size:17px;
+      letter-spacing:-.02em;
+      margin-bottom:8px;
+    }
+    .role-card>span{
+      color:#687382;
+      line-height:1.55;
+    }
+    .role-foot{
+      margin-top:21px;
+      padding-top:17px;
+      color:#7a8491;
+    }
+
+    .empty-state strong{
+      color:#263340;
+      font-size:19px;
+      letter-spacing:-.02em;
+    }
+    .empty-state span{color:#77818e}
+
+    .signature-status.added{
+      color:#19704d;
+    }
+
+    @media(max-width:700px){
+      .role-box{padding:22px;border-radius:18px}
+      .role-card{min-height:auto}
+      .brand{min-width:0;padding-left:11px}
+      .brand-kicker{display:none}
+      .layout{padding:9px}
+    }
+
   </style>
 </head>
+
 <body>
+  <section id="roleScreen" class="role-screen">
+    <div class="role-box">
+      <div class="role-brand">ITAÚBA <span>INCORPORAÇÕES E CONSTRUÇÕES</span></div>
+      <h1>Selecione a etapa do processo</h1>
+      <p>Escolha a área responsável. A interface exibirá somente os controles necessários para esta etapa.</p>
+
+      <div class="role-grid">
+        <button class="role-card role-finance" type="button" data-role="financeiro">
+          <div class="role-card-top"><span class="role-icon">01</span><span class="role-step">ETAPA 01</span></div>
+          <strong>Financeiro</strong>
+          <span>Preencha os dados da nota, inclua o Visto e aplique o primeiro carimbo no PDF.</span>
+        </button>
+
+        <button class="role-card role-admin" type="button" data-role="administracao">
+          <div class="role-card-top"><span class="role-icon">02</span><span class="role-step">ETAPA 02</span></div>
+          <strong>Administração</strong>
+          <span>Abra o PDF recebido do Financeiro e complete somente o Atesto e a data.</span>
+        </button>
+
+        <button class="role-card directoria role-director" type="button" data-role="diretoria">
+          <div class="role-card-top"><span class="role-icon">03</span><span class="role-step">ETAPA 03</span></div>
+          <strong>Diretoria</strong>
+          <span>Abra o PDF já vistado e atestado e aplique a conferência exclusiva da Diretoria.</span>
+        </button>
+      </div>
+
+      <div class="role-foot">Sem login e sem armazenamento: a etapa escolhida apenas organiza os controles exibidos na tela.</div>
+    </div>
+  </section>
+
   <header class="topbar">
     <div class="brand">
+      <div class="brand-kicker">ITAÚBA · DOCUMENTOS</div>
       <strong>Carimbo de Notas - Itaúba Incorporações e Construções</strong>
-      <span>Preencha, assine e aplique o carimbo diretamente no PDF.</span>
+      <span id="brandSubtitle">Selecione uma etapa para começar.</span>
+      <span id="roleBadge" class="role-badge hidden"></span>
     </div>
 
-    <label class="btn primary topbar-upload" for="pdfInput">Enviar PDF</label>
-    <input id="pdfInput" class="file-input" type="file" accept="application/pdf" />
+    <button id="changeRoleBtn" class="btn" type="button">Trocar etapa</button>
 
-    <button id="newNoteBtn" class="btn" disabled>Nova nota</button>
-    <button id="addStampBtn" class="btn success" disabled>Adicionar carimbo</button>
-    <button id="removeStampBtn" class="btn danger" disabled>Remover carimbo</button>
-    <button id="downloadBtn" class="btn primary" disabled>Baixar PDF final</button>
-    <span id="notice" class="notice">PDF gerado.</span>
+    <label class="btn primary" for="pdfInput">Enviar PDF</label>
+    <input id="pdfInput" class="file-input" type="file" accept="application/pdf">
+
+    <button id="newNoteBtn" class="btn" type="button" disabled>Nova nota</button>
+    <button id="addOverlayBtn" class="btn success" type="button" disabled>Adicionar carimbo</button>
+    <button id="removeOverlayBtn" class="btn danger" type="button" disabled>Remover carimbo</button>
+    <button id="downloadBtn" class="btn primary" type="button" disabled>Baixar PDF final</button>
   </header>
 
   <main class="layout">
     <section class="viewer-card">
       <div class="viewer-toolbar">
-        <button id="prevPageBtn" class="btn compact" disabled>← Página anterior</button>
-        <button id="nextPageBtn" class="btn compact" disabled>Próxima página →</button>
+        <button id="prevPageBtn" class="btn compact" type="button" disabled>← Página anterior</button>
+        <button id="nextPageBtn" class="btn compact" type="button" disabled>Próxima página →</button>
         <span class="spacer"></span>
+        <span id="notice" class="notice">PDF gerado.</span>
         <span id="pageInfo" class="page-info">Nenhum PDF carregado</span>
       </div>
 
-      <div id="documentArea" class="document-area">
+      <div class="document-area">
         <div id="pageShell" class="page-shell">
           <canvas id="pdfCanvas"></canvas>
 
-          <div id="stampOverlay" class="hidden" aria-label="Carimbo reposicionável">
-            <svg id="stampSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 645" preserveAspectRatio="none">
-              <defs>
-                <clipPath id="clipObra"><rect x="466" y="27" width="694" height="62"/></clipPath>
-                <clipPath id="clipRecebido"><rect x="218" y="113" width="942" height="62"/></clipPath>
-                <clipPath id="clipDesc1"><rect x="235" y="199" width="925" height="62"/></clipPath>
-                <clipPath id="clipDesc2"><rect x="34" y="285" width="1126" height="62"/></clipPath>
-                <clipPath id="clipDocumento"><rect x="380" y="371" width="780" height="62"/></clipPath>
-                <clipPath id="clipVisto"><rect x="140" y="447" width="630" height="66"/></clipPath>
-                <clipPath id="clipAtesto"><rect x="170" y="533" width="600" height="66"/></clipPath>
-              </defs>
-
-              <rect id="paperBg" x="6" y="6" width="1188" height="633" rx="2" fill="rgba(255,255,255,0.94)" stroke="#252525" stroke-width="3.2"/>
-
-              <g stroke="#202020" stroke-width="2.3" fill="none" stroke-linecap="square">
-                <!-- DATA -->
-                <line x1="128" y1="80" x2="173" y2="80"/>
-                <line x1="196" y1="80" x2="241" y2="80"/>
-                <line x1="264" y1="80" x2="340" y2="80"/>
-                <!-- OBRA -->
-                <line x1="466" y1="80" x2="1160" y2="80"/>
-                <!-- RECEBIDO -->
-                <line x1="218" y1="166" x2="1160" y2="166"/>
-                <!-- DESCRIÇÃO -->
-                <line x1="235" y1="252" x2="1160" y2="252"/>
-                <line x1="34" y1="338" x2="1160" y2="338"/>
-                <!-- CT / PEDIDO / TÍTULO -->
-                <line x1="380" y1="424" x2="1160" y2="424"/>
-                <!-- VISTO -->
-                <line x1="140" y1="510" x2="770" y2="510"/>
-                <!-- VISTO DATA -->
-                <line x1="914" y1="510" x2="959" y2="510"/>
-                <line x1="982" y1="510" x2="1027" y2="510"/>
-                <line x1="1050" y1="510" x2="1160" y2="510"/>
-                <!-- ATESTO -->
-                <line x1="170" y1="596" x2="770" y2="596"/>
-                <!-- ATESTO DATA -->
-                <line x1="914" y1="596" x2="959" y2="596"/>
-                <line x1="982" y1="596" x2="1027" y2="596"/>
-                <line x1="1050" y1="596" x2="1160" y2="596"/>
-              </g>
-
-              <g fill="#111111" font-family="Calibri, Carlito, Arial, sans-serif" font-size="32" font-weight="700">
-                <text x="34" y="69">DATA:</text>
-                <text x="354" y="69">OBRA:</text>
-                <text x="34" y="155">RECEBIDO:</text>
-                <text x="34" y="241">DESCRIÇÃO:</text>
-                <text x="34" y="413">CT / PEDIDO / TÍTULO:</text>
-                <text x="34" y="499">VISTO:</text>
-                <text x="790" y="499">DATA:</text>
-                <text x="34" y="585">ATESTO:</text>
-                <text x="790" y="585">DATA:</text>
-              </g>
-
-              <g fill="#111111" font-family="Calibri, Carlito, Arial, sans-serif" font-size="30" font-weight="700">
-                <text x="180" y="69">/</text>
-                <text x="248" y="69">/</text>
-                <text x="966" y="499">/</text>
-                <text x="1034" y="499">/</text>
-                <text x="966" y="585">/</text>
-                <text x="1034" y="585">/</text>
-              </g>
-
-              <g fill="#092c56" font-family="Roboto, Arial, sans-serif" font-size="36" font-weight="400">
-                <text id="svDataDay" x="150.5" y="69" text-anchor="middle"></text>
-                <text id="svDataMonth" x="218.5" y="69" text-anchor="middle"></text>
-                <text id="svDataYear" x="302" y="69" text-anchor="middle"></text>
-
-                <text id="svObra" x="474" y="69" clip-path="url(#clipObra)"></text>
-                <text id="svRecebido" x="226" y="155" clip-path="url(#clipRecebido)"></text>
-                <text id="svDescricao1" x="243" y="241" clip-path="url(#clipDesc1)"></text>
-                <text id="svDescricao2" x="34" y="327" clip-path="url(#clipDesc2)"></text>
-                <text id="svDocumento" x="388" y="413" clip-path="url(#clipDocumento)"></text>
-
-                <text id="svVistoDay" x="936.5" y="499" text-anchor="middle"></text>
-                <text id="svVistoMonth" x="1004.5" y="499" text-anchor="middle"></text>
-                <text id="svVistoYear" x="1105" y="499" text-anchor="middle"></text>
-
-                <text id="svAtestoDay" x="936.5" y="585" text-anchor="middle"></text>
-                <text id="svAtestoMonth" x="1004.5" y="585" text-anchor="middle"></text>
-                <text id="svAtestoYear" x="1105" y="585" text-anchor="middle"></text>
-              </g>
-
-              <image id="svVistoSign" x="140" y="446" width="630" height="62" clip-path="url(#clipVisto)" preserveAspectRatio="xMinYMid meet"/>
-              <image id="svAtestoSign" x="170" y="532" width="600" height="62" clip-path="url(#clipAtesto)" preserveAspectRatio="xMinYMid meet"/>
-            </svg>
+          <div id="overlay" class="hidden" data-mode="financeiro">
+            <svg id="activeSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" preserveAspectRatio="none"></svg>
             <div class="resize-handle" title="Redimensionar"></div>
           </div>
         </div>
 
         <div id="emptyState" class="empty-state">
           <div>
-            <strong>Envie uma NFS em PDF</strong>
-            O documento será processado apenas no seu navegador.
+            <strong id="emptyTitle">Selecione uma etapa</strong>
+            <span id="emptyText">Depois, envie o PDF para começar.</span>
           </div>
         </div>
       </div>
     </section>
 
-    <aside class="panel-card">
-      <div class="instructions">
-        <strong>Como usar:</strong>
-        <ol>
-          <li>Envie a nota em PDF.</li>
-          <li>Adicione o carimbo ao documento.</li>
-          <li>Preencha os dados e inclua as assinaturas.</li>
-          <li>Posicione e ajuste o tamanho do carimbo.</li>
-          <li>Baixe o PDF final.</li>
-        </ol>
+    <aside id="panelCard" class="panel-card">
+      <div id="panelPlaceholder">
+        <h2>Etapa do processo</h2>
+        <p class="helper">Escolha Financeiro, Administração ou Diretoria para carregar os controles correspondentes.</p>
       </div>
 
-      <h2>Dados do carimbo</h2>
-      <p class="helper">Preencha as informações que serão exibidas no carimbo.</p>
+      <div id="financePanel" class="hidden">
+        <div class="instructions">
+          <strong>Como usar:</strong>
+          <ol>
+            <li>Envie a nota original em PDF.</li>
+            <li>Preencha os dados e inclua o Visto.</li>
+            <li>Adicione e posicione o carimbo.</li>
+            <li>Baixe o PDF e encaminhe para a Administração.</li>
+          </ol>
+        </div>
 
-      <div class="section">
-        <div class="grid">
+        <h2>Dados do carimbo</h2>
+        <p class="helper">Preencha as informações do primeiro carimbo. A linha de Atesto ficará reservada para a próxima etapa.</p>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="fData">Data</label><input id="fData" type="date"></div>
+            <div class="field">
+              <div class="label-row"><label for="fObra">Obra</label><span id="fObraCount" class="char-counter">0/42</span></div>
+              <input id="fObra" maxlength="42" placeholder="Ex.: Residencial Jardim das Araucárias">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fRecebido">Recebido</label><span id="fRecebidoCount" class="char-counter">0/54</span></div>
+              <input id="fRecebido" maxlength="54" placeholder="Ex.: Setor Administrativo">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fDescricao">Descrição</label><span id="fDescricaoCount" class="char-counter">0/115</span></div>
+              <textarea id="fDescricao" maxlength="115" placeholder="Descreva o serviço ou fornecimento."></textarea>
+            </div>
+
+            <div class="field">
+              <div class="label-row"><label for="fCT">CT</label><span id="fCTCount" class="char-counter">0/24</span></div>
+              <input id="fCT" maxlength="24" placeholder="CT-2026-0148">
+            </div>
+
+            <div class="field">
+              <div class="label-row"><label for="fPedido">Pedido</label><span id="fPedidoCount" class="char-counter">0/24</span></div>
+              <input id="fPedido" maxlength="24" placeholder="PED-008752">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fTitulo">Título</label><span id="fTituloCount" class="char-counter">0/34</span></div>
+              <input id="fTitulo" maxlength="34" placeholder="Medição 07/2026">
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Visto</div>
+          <div class="grid">
+            <div class="field"><label for="fVistoData">Data do Visto</label><input id="fVistoData" type="date"></div>
+            <div class="field">
+              <label>Assinatura</label>
+              <div class="signature-row">
+                <span id="financeSignatureStatus" class="signature-status">Nenhuma assinatura</span>
+                <button class="btn compact sign-trigger" data-sign-target="financeiro" type="button">Assinar</button>
+                <button class="btn compact danger clear-sign" data-sign-target="financeiro" type="button">Limpar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Tamanho do carimbo</div>
+          <div class="size-buttons">
+            <button class="btn compact size-btn" type="button" data-size="small" disabled>Pequeno</button>
+            <button class="btn compact size-btn" type="button" data-size="medium" disabled>Médio</button>
+            <button class="btn compact size-btn" type="button" data-size="large" disabled>Grande</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="financePageSelect">Página do carimbo</label><select id="financePageSelect" class="page-select" disabled></select></div>
+            <div class="field"><label for="financeOpacity">Opacidade</label><input id="financeOpacity" class="opacity-control" type="range" min="72" max="100" value="94"></div>
+          </div>
+        </div>
+
+        <div class="section"><div class="panel-actions"><button class="btn danger clear-form" type="button">Limpar formulário</button></div></div>
+      </div>
+
+      <div id="adminPanel" class="hidden">
+        <div class="instructions">
+          <strong>Como usar:</strong>
+          <ol>
+            <li>Envie o PDF recebido do Financeiro.</li>
+            <li>Inclua sua assinatura e confirme a data.</li>
+            <li>Adicione o Atesto.</li>
+            <li>Encaixe a área pontilhada sobre a linha ATESTO do carimbo existente.</li>
+            <li>Baixe o PDF e encaminhe para a Diretoria.</li>
+          </ol>
+        </div>
+
+        <h2>Atesto da Administração</h2>
+        <p class="helper">Nesta etapa, somente a assinatura e a data serão adicionadas ao PDF.</p>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="aData">Data do Atesto</label><input id="aData" type="date"></div>
+            <div class="field">
+              <label>Assinatura do Atesto</label>
+              <div class="signature-row">
+                <span id="adminSignatureStatus" class="signature-status">Nenhuma assinatura</span>
+                <button class="btn compact sign-trigger" data-sign-target="administracao" type="button">Assinar</button>
+                <button class="btn compact danger clear-sign" data-sign-target="administracao" type="button">Limpar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="admin-tip">
+            A borda pontilhada aparece somente durante a edição. Ela não será impressa no PDF final.
+          </div>
+        </div>
+
+        <div class="section">
           <div class="field">
-            <label for="fData">Data</label>
-            <input id="fData" type="date" />
-          </div>
-          <div class="field">
-            <div class="label-row">
-              <label for="fObra">Obra</label>
-              <span id="fObraCount" class="char-counter">0/42</span>
-            </div>
-            <input id="fObra" maxlength="42" placeholder="Nome da obra" />
-          </div>
-          <div class="field full">
-            <div class="label-row">
-              <label for="fRecebido">Recebido</label>
-              <span id="fRecebidoCount" class="char-counter">0/54</span>
-            </div>
-            <input id="fRecebido" maxlength="54" placeholder="Nome, setor ou responsável" />
-          </div>
-          <div class="field full">
-            <div class="label-row">
-              <label for="fDescricao">Descrição</label>
-              <span id="fDescricaoCount" class="char-counter">0/115</span>
-            </div>
-            <textarea id="fDescricao" maxlength="115" placeholder="Descrição do documento ou serviço"></textarea>
-          </div>
-          <div class="field full">
-            <div class="label-row">
-              <label for="fCT">CT</label>
-              <span id="fCTCount" class="char-counter">0/24</span>
-            </div>
-            <input id="fCT" maxlength="24" placeholder="Ex.: CT-2026-0148" />
-          </div>
-          <div class="field full">
-            <div class="label-row">
-              <label for="fPedido">Pedido</label>
-              <span id="fPedidoCount" class="char-counter">0/24</span>
-            </div>
-            <input id="fPedido" maxlength="24" placeholder="Ex.: PED-008752" />
-          </div>
-          <div class="field full">
-            <div class="label-row">
-              <label for="fTitulo">Título</label>
-              <span id="fTituloCount" class="char-counter">0/34</span>
-            </div>
-            <input id="fTitulo" maxlength="34" placeholder="Ex.: Medição 07/2026" />
+            <label for="adminPageSelect">Página do Atesto</label>
+            <select id="adminPageSelect" class="page-select" disabled></select>
           </div>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Visto</div>
-        <div class="signature-row">
-          <span id="vistoStatus" class="signature-status">Nenhuma assinatura</span>
-          <button class="btn compact" data-sign="visto">Assinar</button>
-          <button class="btn compact danger" data-clear-sign="visto">Limpar</button>
+      <div id="directorPanel" class="hidden director-panel">
+        <div class="instructions red">
+          <strong>Como usar:</strong>
+          <ol>
+            <li>Envie o PDF já vistado e atestado.</li>
+            <li>Registre uma observação, se necessário.</li>
+            <li>Inclua a assinatura da Diretoria.</li>
+            <li>Adicione e posicione o carimbo vermelho.</li>
+            <li>Baixe o PDF definitivo.</li>
+          </ol>
         </div>
-        <div class="field">
-          <label for="fVistoData">Data do visto</label>
-          <input id="fVistoData" type="date" />
-        </div>
-      </div>
 
-      <div class="section">
-        <div class="section-title">Atesto</div>
-        <div class="signature-row">
-          <span id="atestoStatus" class="signature-status">Nenhuma assinatura</span>
-          <button class="btn compact" data-sign="atesto">Assinar</button>
-          <button class="btn compact danger" data-clear-sign="atesto">Limpar</button>
-        </div>
-        <div class="field">
-          <label for="fAtestoData">Data do atesto</label>
-          <input id="fAtestoData" type="date" />
-        </div>
-      </div>
+        <h2>Conferência da Diretoria</h2>
+        <p class="helper">Esta conferência é independente do carimbo operacional e será aplicada em vermelho.</p>
 
-      <div class="section">
-        <div class="section-title">Tamanho do carimbo</div>
-        <div class="size-buttons">
-          <button class="btn compact stamp-size-btn" type="button" data-stamp-size="small" disabled>Pequeno</button>
-          <button class="btn compact stamp-size-btn" type="button" data-stamp-size="medium" disabled>Médio</button>
-          <button class="btn compact stamp-size-btn" type="button" data-stamp-size="large" disabled>Grande</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="grid">
-          <div class="field">
-            <label for="stampPageSelect">Página do carimbo</label>
-            <select id="stampPageSelect" disabled></select>
-          </div>
-          <div class="field">
-            <label for="stampOpacity">Opacidade</label>
-            <input id="stampOpacity" type="range" min="72" max="100" value="92" />
+        <div class="section">
+          <div class="grid">
+            <div class="field full">
+              <div class="label-row"><label for="dObs">Observações</label><span id="dObsCount" class="char-counter">0/180</span></div>
+              <textarea id="dObs" maxlength="180" placeholder="Ex.: Conferido. Liberado para pagamento."></textarea>
+            </div>
+            <div class="field"><label for="dData">Data</label><input id="dData" type="date"></div>
           </div>
         </div>
-      </div>
 
-      <div class="section">
-        <div class="panel-actions">
-          <button id="clearFormBtn" class="btn danger" type="button">Limpar formulário</button>
+        <div class="section">
+          <div class="section-title">Assinatura da Diretoria</div>
+          <div class="signature-row">
+            <span id="directorSignatureStatus" class="signature-status">Nenhuma assinatura</span>
+            <button class="btn compact sign-trigger" data-sign-target="diretoria" type="button">Assinar</button>
+            <button class="btn compact danger clear-sign" data-sign-target="diretoria" type="button">Limpar</button>
+          </div>
         </div>
+
+        <div class="section">
+          <div class="section-title">Tamanho da conferência</div>
+          <div class="size-buttons">
+            <button class="btn compact size-btn" type="button" data-size="small" disabled>Pequeno</button>
+            <button class="btn compact size-btn" type="button" data-size="medium" disabled>Médio</button>
+            <button class="btn compact size-btn" type="button" data-size="large" disabled>Grande</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="directorPageSelect">Página da conferência</label><select id="directorPageSelect" class="page-select" disabled></select></div>
+            <div class="field"><label for="directorOpacity">Opacidade</label><input id="directorOpacity" class="opacity-control" type="range" min="72" max="100" value="94"></div>
+          </div>
+        </div>
+
+        <div class="section"><div class="panel-actions"><button class="btn danger clear-form" type="button">Limpar dados</button></div></div>
       </div>
 
+      <div class="privacy">O PDF e as assinaturas são processados apenas neste navegador e não são armazenados pela ferramenta.</div>
     </aside>
   </main>
 
   <dialog id="signatureDialog">
     <div class="dialog-head">
-      <strong id="signatureTitle">Adicionar assinatura</strong>
+      <strong id="signatureDialogTitle">Assinatura</strong>
       <button id="closeSignatureDialog" class="btn compact" type="button">Fechar</button>
     </div>
-
     <div class="dialog-body">
       <canvas id="signatureCanvas" width="1000" height="440"></canvas>
       <div class="upload-row">
         <button id="clearPadBtn" class="btn compact" type="button">Limpar desenho</button>
         <label class="btn compact" for="signatureFile">Enviar PNG/JPG</label>
-        <input id="signatureFile" class="file-input" type="file" accept="image/png,image/jpeg" />
+        <input id="signatureFile" class="file-input" type="file" accept="image/png,image/jpeg">
         <span class="signature-status">Desenhe com o mouse/dedo ou envie uma imagem.</span>
       </div>
     </div>
-
     <div class="dialog-actions">
       <button id="cancelSignatureBtn" class="btn" type="button">Cancelar</button>
       <button id="saveSignatureBtn" class="btn primary" type="button">Usar assinatura</button>
@@ -685,770 +858,673 @@
 
   <script type="module">
     import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
     const { PDFDocument } = PDFLib;
     const $ = (id) => document.getElementById(id);
-
-    const measureCanvas = document.createElement('canvas');
-    const measureCtx = measureCanvas.getContext('2d');
+    const measureCanvas = document.createElement("canvas");
+    const measureCtx = measureCanvas.getContext("2d");
 
     const state = {
+      role: null,
       pdfBytes: null,
       pdfDoc: null,
-      pdfName: 'documento.pdf',
+      pdfName: "documento.pdf",
       currentPage: 1,
       pageCount: 0,
       renderScale: 1.35,
-      stampVisible: false,
-      stampPage: 1,
-      signatures: { visto: '', atesto: '' },
-      activeSignature: null,
-      isDrawing: false,
-      lastPoint: null,
-      uploadedSignature: ''
+      overlayVisible: false,
+      overlayPage: 1,
+      signatures: { financeiro:"", administracao:"", diretoria:"" },
+      signingTarget: null,
+      drawing: false,
+      lastPoint: null
     };
 
     const els = {
-      pdfInput: $('pdfInput'),
-      canvas: $('pdfCanvas'),
-      pageShell: $('pageShell'),
-      emptyState: $('emptyState'),
-      stamp: $('stampOverlay'),
-      stampSvg: $('stampSvg'),
-      newNoteBtn: $('newNoteBtn'),
-      addStampBtn: $('addStampBtn'),
-      removeStampBtn: $('removeStampBtn'),
-      downloadBtn: $('downloadBtn'),
-      clearFormBtn: $('clearFormBtn'),
-      sizeButtons: [...document.querySelectorAll('.stamp-size-btn')],
-      prevPageBtn: $('prevPageBtn'),
-      nextPageBtn: $('nextPageBtn'),
-      pageInfo: $('pageInfo'),
-      pageSelect: $('stampPageSelect'),
-      opacity: $('stampOpacity'),
-      notice: $('notice'),
-      signatureDialog: $('signatureDialog'),
-      signatureCanvas: $('signatureCanvas'),
-      signatureTitle: $('signatureTitle'),
-      signatureFile: $('signatureFile')
+      roleScreen:$("roleScreen"),
+      brandSubtitle:$("brandSubtitle"),
+      roleBadge:$("roleBadge"),
+      pdfInput:$("pdfInput"),
+      canvas:$("pdfCanvas"),
+      pageShell:$("pageShell"),
+      emptyState:$("emptyState"),
+      emptyTitle:$("emptyTitle"),
+      emptyText:$("emptyText"),
+      overlay:$("overlay"),
+      activeSvg:$("activeSvg"),
+      addOverlayBtn:$("addOverlayBtn"),
+      removeOverlayBtn:$("removeOverlayBtn"),
+      downloadBtn:$("downloadBtn"),
+      newNoteBtn:$("newNoteBtn"),
+      prevPageBtn:$("prevPageBtn"),
+      nextPageBtn:$("nextPageBtn"),
+      pageInfo:$("pageInfo"),
+      notice:$("notice"),
+      financePanel:$("financePanel"),
+      adminPanel:$("adminPanel"),
+      directorPanel:$("directorPanel"),
+      panelPlaceholder:$("panelPlaceholder"),
+      dialog:$("signatureDialog"),
+      sigCanvas:$("signatureCanvas"),
+      sigFile:$("signatureFile"),
+      sigTitle:$("signatureDialogTitle")
     };
 
-    function formatDate(value) {
-      if (!value) return '';
-      const [y, m, d] = value.split('-');
-      return `${d}/${m}/${y}`;
-    }
-
-    function textWidth(text, font = '36px Roboto, Arial') {
-      measureCtx.font = font;
-      return measureCtx.measureText(text || '').width;
-    }
-
-    function fitLine(text, maxWidth, font = '36px Roboto, Arial') {
-      const raw = (text || '').trim();
-      if (!raw) return '';
-      if (textWidth(raw, font) <= maxWidth) return raw;
-      let result = raw;
-      while (result.length > 1 && textWidth(result + '…', font) > maxWidth) {
-        result = result.slice(0, -1);
+    const roleMeta = {
+      financeiro:{
+        label:"Financeiro",
+        subtitle:"Preencha os dados, inclua o Visto e aplique o primeiro carimbo.",
+        addLabel:"Adicionar carimbo",
+        removeLabel:"Remover carimbo",
+        emptyTitle:"Envie a nota original em PDF",
+        emptyText:"O Financeiro aplica o primeiro carimbo e deixa a linha de Atesto reservada.",
+        suffix:"_visto.pdf"
+      },
+      administracao:{
+        label:"Administração",
+        subtitle:"Complete o Atesto no PDF já carimbado pelo Financeiro.",
+        addLabel:"Adicionar atesto",
+        removeLabel:"Remover atesto",
+        emptyTitle:"Envie o PDF recebido do Financeiro",
+        emptyText:"Depois, adicione a assinatura e a data sobre a linha ATESTO do carimbo existente.",
+        suffix:"_atestado.pdf"
+      },
+      diretoria:{
+        label:"Diretoria",
+        subtitle:"Aplique a conferência final da Diretoria em vermelho.",
+        addLabel:"Adicionar conferência",
+        removeLabel:"Remover conferência",
+        emptyTitle:"Envie o PDF já vistado e atestado",
+        emptyText:"A Diretoria adiciona uma conferência independente, em vermelho.",
+        suffix:"_diretoria.pdf"
       }
-      return result.trimEnd() + '…';
+    };
+
+    const today = new Date();
+    const localISO = new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    ["fData","fVistoData","aData","dData"].forEach(id => $(id).value = localISO);
+
+    function splitDate(value){
+      if(!value) return ["","",""];
+      const [y,m,d] = value.split("-");
+      return [d||"",m||"",y||""];
     }
 
-    function wrapText(text, maxWidth, maxLines, font = '36px Roboto, Arial') {
-      const words = (text || '').trim().split(/\s+/).filter(Boolean);
-      if (!words.length) return [];
-      const lines = [];
-      let current = '';
-
-      for (let i = 0; i < words.length; i++) {
-        const candidate = current ? `${current} ${words[i]}` : words[i];
-        if (textWidth(candidate, font) <= maxWidth) {
-          current = candidate;
-          continue;
-        }
-
-        if (lines.length === maxLines - 1) {
-          const rest = [current, ...words.slice(i)].filter(Boolean).join(' ');
-          lines.push(fitLine(rest, maxWidth, font));
-          return lines;
-        }
-
-        if (current) lines.push(current);
-        current = words[i];
-      }
-
-      if (current && lines.length < maxLines) lines.push(current);
-      return lines;
+    function formatDate(value){
+      const [d,m,y] = splitDate(value);
+      return d && m && y ? `${d}/${m}/${y}` : "";
     }
 
-    function setText(id, value) {
-      $(id).textContent = value || '';
+    function textWidth(text,font="36px Roboto,Arial"){
+      measureCtx.font=font;
+      return measureCtx.measureText(text||"").width;
     }
 
-    function setFittedText(id, value, maxWidth, maxSize = 36, minSize = 23) {
-      const el = $(id);
-      const raw = (value || '').trim();
-      let size = maxSize;
-      while (size > minSize && textWidth(raw, `${size}px Roboto, Arial`) > maxWidth) size--;
-      el.setAttribute('font-size', String(size));
-      el.textContent = textWidth(raw, `${size}px Roboto, Arial`) <= maxWidth
-        ? raw
-        : fitLine(raw, maxWidth, `${size}px Roboto, Arial`);
+    function fitLine(text,maxWidth,font="36px Roboto,Arial"){
+      let raw=(text||"").trim();
+      if(!raw) return "";
+      if(textWidth(raw,font)<=maxWidth) return raw;
+      while(raw.length>1 && textWidth(raw+"…",font)>maxWidth) raw=raw.slice(0,-1);
+      return raw.trimEnd()+"…";
     }
 
-    function dateParts(value) {
-      if (!value) return ['', '', ''];
-      const [year, month, day] = value.split('-');
-      return [day || '', month || '', year || ''];
-    }
-
-    function setDateParts(prefix, value) {
-      const [day, month, year] = dateParts(value);
-      setText(`${prefix}Day`, day);
-      setText(`${prefix}Month`, month);
-      setText(`${prefix}Year`, year);
-    }
-
-    function updateStampText() {
-      setDateParts('svData', $('fData').value);
-      setFittedText('svObra', $('fObra').value, 675, 36, 23);
-      setFittedText('svRecebido', $('fRecebido').value, 920, 36, 23);
-
-      const desc = wrapText($('fDescricao').value, 900, 2, '36px Roboto, Arial');
-      setFittedText('svDescricao1', desc[0] || '', 900, 36, 23);
-      setFittedText('svDescricao2', desc[1] || '', 1100, 36, 23);
-
-      const documento = [
-        $('fCT').value.trim(),
-        $('fPedido').value.trim(),
-        $('fTitulo').value.trim()
-      ].filter(Boolean).join(' / ');
-      setFittedText('svDocumento', documento, 755, 36, 23);
-      setDateParts('svVisto', $('fVistoData').value);
-      setDateParts('svAtesto', $('fAtestoData').value);
-
-      $('svVistoSign').setAttributeNS('http://www.w3.org/1999/xlink', 'href', state.signatures.visto || '');
-      $('svAtestoSign').setAttributeNS('http://www.w3.org/1999/xlink', 'href', state.signatures.atesto || '');
-
-      const vistoAdicionado = Boolean(state.signatures.visto);
-      const atestoAdicionado = Boolean(state.signatures.atesto);
-
-      $('vistoStatus').textContent = vistoAdicionado ? 'Assinatura adicionada' : 'Nenhuma assinatura';
-      $('atestoStatus').textContent = atestoAdicionado ? 'Assinatura adicionada' : 'Nenhuma assinatura';
-      $('vistoStatus').classList.toggle('added', vistoAdicionado);
-      $('atestoStatus').classList.toggle('added', atestoAdicionado);
-    }
-
-    const countedFields = ['fObra', 'fRecebido', 'fDescricao', 'fCT', 'fPedido', 'fTitulo'];
-    const allFormFields = ['fData', 'fObra', 'fRecebido', 'fDescricao', 'fCT', 'fPedido', 'fTitulo', 'fVistoData', 'fAtestoData'];
-
-    function enforceHardLimit(input) {
-      const maximum = Number(input.maxLength);
-      if (!Number.isFinite(maximum) || maximum < 0) return;
-      if (input.value.length > maximum) {
-        input.value = input.value.slice(0, maximum);
-      }
-    }
-
-    function installHardLimit(inputId) {
-      const input = $(inputId);
-      const maximum = Number(input.maxLength);
-      if (!input || !Number.isFinite(maximum) || maximum < 0) return;
-
-      input.addEventListener('beforeinput', (event) => {
-        if (!event.inputType?.startsWith('insert') || event.isComposing) return;
-        if (event.inputType === 'insertFromPaste') return;
-
-        const selectionStart = input.selectionStart ?? input.value.length;
-        const selectionEnd = input.selectionEnd ?? selectionStart;
-        const selectedLength = selectionEnd - selectionStart;
-        const insertedLength = (event.data || '').length;
-        const resultingLength = input.value.length - selectedLength + insertedLength;
-
-        if (resultingLength > maximum) {
-          event.preventDefault();
-        }
-      });
-
-      input.addEventListener('paste', (event) => {
-        const pasted = event.clipboardData?.getData('text') || '';
-        const selectionStart = input.selectionStart ?? input.value.length;
-        const selectionEnd = input.selectionEnd ?? selectionStart;
-        const available = maximum - (input.value.length - (selectionEnd - selectionStart));
-
-        if (pasted.length <= available) return;
-
-        event.preventDefault();
-        if (available <= 0) return;
-
-        const accepted = pasted.slice(0, available);
-        input.setRangeText(accepted, selectionStart, selectionEnd, 'end');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-    }
-
-    function updateCharacterCounter(inputId) {
-      const input = $(inputId);
-      const counter = $(`${inputId}Count`);
-      if (!input || !counter) return;
-
-      const current = input.value.length;
-      const maximum = Number(input.maxLength) || 0;
-      counter.textContent = `${current}/${maximum}`;
-      counter.classList.toggle('near-limit', maximum > 0 && current >= Math.ceil(maximum * 0.8) && current < maximum);
-      counter.classList.toggle('at-limit', maximum > 0 && current >= maximum);
-    }
-
-    allFormFields.forEach((id) => {
-      $(id).addEventListener('input', () => {
-        enforceHardLimit($(id));
-        updateStampText();
-        updateCharacterCounter(id);
-      });
-    });
-
-    countedFields.forEach((id) => {
-      installHardLimit(id);
-      updateCharacterCounter(id);
-    });
-
-    function hasFormContent() {
-      return allFormFields.some((id) => Boolean($(id).value)) ||
-        Boolean(state.signatures.visto) ||
-        Boolean(state.signatures.atesto);
-    }
-
-    function resetFormData() {
-      allFormFields.forEach((id) => {
-        $(id).value = '';
-        updateCharacterCounter(id);
-      });
-
-      state.signatures.visto = '';
-      state.signatures.atesto = '';
-      clearSignaturePad();
-      updateStampText();
-    }
-
-    function setSizeButtonsEnabled(enabled) {
-      els.sizeButtons.forEach((button) => {
-        button.disabled = !enabled;
-        if (!enabled) button.classList.remove('active');
-      });
-    }
-
-    function markActiveSize(sizeName) {
-      els.sizeButtons.forEach((button) => {
-        button.classList.toggle('active', button.dataset.stampSize === sizeName);
-      });
-    }
-
-    function resizeStampToPreset(sizeName) {
-      if (!state.stampVisible || !state.pdfDoc) return;
-
-      const canvasWidth = els.canvas.clientWidth;
-      const canvasHeight = els.canvas.clientHeight;
-      const presetRatio = {
-        small: 0.34,
-        medium: 0.52,
-        large: 0.70
-      };
-
-      let width = canvasWidth * presetRatio[sizeName];
-      width = Math.max(getMinStampWidth(), Math.min(width, canvasWidth - 10));
-
-      const ratio = 1200 / 645;
-      let height = width / ratio;
-
-      if (height > canvasHeight - 10) {
-        height = canvasHeight - 10;
-        width = height * ratio;
-      }
-
-      const currentLeft = parseFloat(els.stamp.style.left) || 0;
-      const currentTop = parseFloat(els.stamp.style.top) || 0;
-      const currentCenterX = currentLeft + els.stamp.offsetWidth / 2;
-      const currentCenterY = currentTop + els.stamp.offsetHeight / 2;
-
-      const left = Math.min(
-        Math.max(0, currentCenterX - width / 2),
-        Math.max(0, canvasWidth - width)
-      );
-      const top = Math.min(
-        Math.max(0, currentCenterY - height / 2),
-        Math.max(0, canvasHeight - height)
-      );
-
-      els.stamp.style.width = `${width}px`;
-      els.stamp.style.height = `${height}px`;
-      els.stamp.style.left = `${left}px`;
-      els.stamp.style.top = `${top}px`;
-      markActiveSize(sizeName);
-    }
-
-    function resetPdfWorkspace() {
-      state.pdfBytes = null;
-      state.pdfDoc = null;
-      state.pdfName = 'documento.pdf';
-      state.currentPage = 1;
-      state.pageCount = 0;
-      state.stampVisible = false;
-      state.stampPage = 1;
-
-      els.pdfInput.value = '';
-      els.canvas.width = 0;
-      els.canvas.height = 0;
-      els.canvas.style.width = '0px';
-      els.canvas.style.height = '0px';
-      els.pageShell.style.width = '0px';
-      els.pageShell.style.height = '0px';
-      els.emptyState.style.display = 'grid';
-      els.pageInfo.textContent = 'Nenhum PDF carregado';
-      els.pageSelect.innerHTML = '';
-      els.pageSelect.disabled = true;
-
-      els.newNoteBtn.disabled = true;
-      els.addStampBtn.disabled = true;
-      els.removeStampBtn.disabled = true;
-      els.downloadBtn.disabled = true;
-      els.prevPageBtn.disabled = true;
-      els.nextPageBtn.disabled = true;
-      els.stamp.classList.add('hidden');
-      setSizeButtonsEnabled(false);
-      resetFormData();
-    }
-
-    els.sizeButtons.forEach((button) => {
-      button.addEventListener('click', () => resizeStampToPreset(button.dataset.stampSize));
-    });
-
-    els.clearFormBtn.addEventListener('click', () => {
-      if (!hasFormContent()) return;
-      if (!confirm('Limpar todos os campos e as duas assinaturas?')) return;
-      resetFormData();
-    });
-
-    els.newNoteBtn.addEventListener('click', () => {
-      if (!confirm('Iniciar uma nova nota? O PDF atual, os dados e as assinaturas serão removidos.')) return;
-      resetPdfWorkspace();
-    });
-
-    els.opacity.addEventListener('input', () => {
-      const alpha = Number(els.opacity.value) / 100;
-      $('paperBg').setAttribute('fill', `rgba(255,255,255,${alpha})`);
-    });
-
-    els.pdfInput.addEventListener('change', async (event) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      if (state.pdfBytes && !confirm('Substituir a nota atual? O PDF, o carimbo e os dados preenchidos serão apagados.')) {
-        els.pdfInput.value = '';
-        return;
-      }
-
-      if (state.pdfBytes) {
-        resetFormData();
-        state.stampVisible = false;
-        els.stamp.classList.add('hidden');
-        setSizeButtonsEnabled(false);
-      }
-
-      if (file.type !== 'application/pdf') {
-        alert('Selecione um arquivo PDF.');
-        return;
-      }
-
-      state.pdfName = file.name;
-      state.pdfBytes = new Uint8Array(await file.arrayBuffer());
-      state.pdfDoc = await pdfjsLib.getDocument({ data: state.pdfBytes.slice() }).promise;
-      state.pageCount = state.pdfDoc.numPages;
-      state.currentPage = 1;
-      state.stampPage = 1;
-
-      els.emptyState.style.display = 'none';
-      els.newNoteBtn.disabled = false;
-      els.addStampBtn.disabled = false;
-      els.downloadBtn.disabled = true;
-      els.prevPageBtn.disabled = false;
-      els.nextPageBtn.disabled = false;
-      els.pageSelect.disabled = false;
-
-      els.pageSelect.innerHTML = '';
-      for (let i = 1; i <= state.pageCount; i++) {
-        const option = document.createElement('option');
-        option.value = String(i);
-        option.textContent = `Página ${i}`;
-        els.pageSelect.appendChild(option);
-      }
-
-      await renderPage(1);
-    });
-
-    async function renderPage(pageNumber) {
-      if (!state.pdfDoc) return;
-      const page = await state.pdfDoc.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: state.renderScale });
-
-      const ctx = els.canvas.getContext('2d');
-      els.canvas.width = Math.ceil(viewport.width);
-      els.canvas.height = Math.ceil(viewport.height);
-      els.canvas.style.width = `${viewport.width}px`;
-      els.canvas.style.height = `${viewport.height}px`;
-      els.pageShell.style.width = `${viewport.width}px`;
-      els.pageShell.style.height = `${viewport.height}px`;
-
-      await page.render({ canvasContext: ctx, viewport }).promise;
-
-      state.currentPage = pageNumber;
-      els.pageInfo.textContent = `Página ${state.currentPage} de ${state.pageCount}`;
-      els.prevPageBtn.disabled = state.currentPage <= 1;
-      els.nextPageBtn.disabled = state.currentPage >= state.pageCount;
-      syncStampVisibility();
-    }
-
-    function syncStampVisibility() {
-      const shouldShow = state.stampVisible && state.currentPage === state.stampPage;
-      els.stamp.classList.toggle('hidden', !shouldShow);
-      els.removeStampBtn.disabled = !state.stampVisible;
-      els.downloadBtn.disabled = !state.stampVisible;
-    }
-
-    els.prevPageBtn.addEventListener('click', () => {
-      if (state.currentPage > 1) renderPage(state.currentPage - 1);
-    });
-    els.nextPageBtn.addEventListener('click', () => {
-      if (state.currentPage < state.pageCount) renderPage(state.currentPage + 1);
-    });
-
-    function getMinStampWidth() {
-      return window.innerWidth <= 650 ? 180 : 220;
-    }
-
-    els.addStampBtn.addEventListener('click', () => {
-      state.stampVisible = true;
-      state.stampPage = state.currentPage;
-      els.pageSelect.value = String(state.stampPage);
-
-      const width = Math.min(620, Math.max(360, els.canvas.clientWidth * 0.52));
-      const height = width * (645 / 1200);
-
-      els.stamp.style.width = `${width}px`;
-      els.stamp.style.height = `${height}px`;
-      els.stamp.style.left = `${Math.max(10, (els.canvas.clientWidth - width) / 2)}px`;
-      els.stamp.style.top = `${Math.max(10, els.canvas.clientHeight - height - 26)}px`;
-
-      setSizeButtonsEnabled(true);
-      markActiveSize('medium');
-      syncStampVisibility();
-      updateStampText();
-    });
-
-    els.removeStampBtn.addEventListener('click', () => {
-      if (!confirm('Remover o carimbo desta nota? Os dados preenchidos serão mantidos.')) return;
-      state.stampVisible = false;
-      setSizeButtonsEnabled(false);
-      syncStampVisibility();
-    });
-
-    els.pageSelect.addEventListener('change', async () => {
-      state.stampPage = Number(els.pageSelect.value);
-      await renderPage(state.stampPage);
-    });
-
-    let dragMode = null;
-    let start = null;
-
-    els.stamp.addEventListener('pointerdown', (event) => {
-      dragMode = event.target.classList.contains('resize-handle') ? 'resize' : 'move';
-      start = {
-        pointerX: event.clientX,
-        pointerY: event.clientY,
-        left: parseFloat(els.stamp.style.left) || 0,
-        top: parseFloat(els.stamp.style.top) || 0,
-        width: els.stamp.offsetWidth,
-        height: els.stamp.offsetHeight
-      };
-      els.stamp.setPointerCapture(event.pointerId);
-      event.preventDefault();
-    });
-
-    els.stamp.addEventListener('pointermove', (event) => {
-      if (!dragMode || !start) return;
-      const dx = event.clientX - start.pointerX;
-      const dy = event.clientY - start.pointerY;
-
-      if (dragMode === 'move') {
-        const maxLeft = Math.max(0, els.canvas.clientWidth - els.stamp.offsetWidth);
-        const maxTop = Math.max(0, els.canvas.clientHeight - els.stamp.offsetHeight);
-        const left = Math.min(maxLeft, Math.max(0, start.left + dx));
-        const top = Math.min(maxTop, Math.max(0, start.top + dy));
-        els.stamp.style.left = `${left}px`;
-        els.stamp.style.top = `${top}px`;
-      } else {
-        markActiveSize('');
-        const ratio = 1200 / 645;
-        let width = Math.max(getMinStampWidth(), start.width + dx);
-        width = Math.min(width, els.canvas.clientWidth - start.left);
-        let height = width / ratio;
-
-        if (start.top + height > els.canvas.clientHeight) {
-          height = els.canvas.clientHeight - start.top;
-          width = height * ratio;
-          width = Math.max(getMinStampWidth(), width);
-          height = width / ratio;
-        }
-
-        els.stamp.style.width = `${width}px`;
-        els.stamp.style.height = `${height}px`;
-      }
-    });
-
-    els.stamp.addEventListener('pointerup', () => {
-      dragMode = null;
-      start = null;
-    });
-
-    const sigCtx = els.signatureCanvas.getContext('2d');
-    sigCtx.lineWidth = 5;
-    sigCtx.lineCap = 'round';
-    sigCtx.lineJoin = 'round';
-    sigCtx.strokeStyle = '#092c56';
-
-    function clearSignaturePad() {
-      sigCtx.clearRect(0, 0, els.signatureCanvas.width, els.signatureCanvas.height);
-      els.signatureFile.value = '';
-      state.uploadedSignature = '';
-    }
-
-    function canvasPoint(event) {
-      const rect = els.signatureCanvas.getBoundingClientRect();
-      return {
-        x: (event.clientX - rect.left) * (els.signatureCanvas.width / rect.width),
-        y: (event.clientY - rect.top) * (els.signatureCanvas.height / rect.height)
-      };
-    }
-
-    els.signatureCanvas.addEventListener('pointerdown', (event) => {
-      state.isDrawing = true;
-      state.lastPoint = canvasPoint(event);
-      els.signatureCanvas.setPointerCapture(event.pointerId);
-    });
-
-    els.signatureCanvas.addEventListener('pointermove', (event) => {
-      if (!state.isDrawing) return;
-      const p = canvasPoint(event);
-      sigCtx.beginPath();
-      sigCtx.moveTo(state.lastPoint.x, state.lastPoint.y);
-      sigCtx.lineTo(p.x, p.y);
-      sigCtx.stroke();
-      state.lastPoint = p;
-    });
-
-    els.signatureCanvas.addEventListener('pointerup', () => {
-      state.isDrawing = false;
-      state.lastPoint = null;
-    });
-
-    function loadImage(dataUrl) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }
-
-    async function trimSignatureDataUrl(dataUrl) {
-      const img = await loadImage(dataUrl);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-      let top = height, left = width, right = 0, bottom = 0;
-      let found = false;
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const idx = (y * width + x) * 4;
-          const r = data[idx], g = data[idx+1], b = data[idx+2], a = data[idx+3];
-          const isInk = a > 20 && !(r > 245 && g > 245 && b > 245);
-          if (isInk) {
-            found = true;
-            if (x < left) left = x;
-            if (x > right) right = x;
-            if (y < top) top = y;
-            if (y > bottom) bottom = y;
+    function wrapText(text,maxWidth,maxLines,font="36px Roboto,Arial"){
+      const words=(text||"").trim().split(/\s+/).filter(Boolean);
+      if(!words.length) return [];
+      const lines=[]; let current="";
+      for(let i=0;i<words.length;i++){
+        const candidate=current?`${current} ${words[i]}`:words[i];
+        if(textWidth(candidate,font)<=maxWidth){ current=candidate; }
+        else{
+          if(current) lines.push(current);
+          current=words[i];
+          if(lines.length===maxLines-1){
+            lines.push(fitLine([current,...words.slice(i+1)].join(" "),maxWidth,font));
+            return lines;
           }
         }
       }
-
-      if (!found) return dataUrl;
-
-      const pad = 14;
-      left = Math.max(0, left - pad);
-      top = Math.max(0, top - pad);
-      right = Math.min(width - 1, right + pad);
-      bottom = Math.min(height - 1, bottom + pad);
-
-      const out = document.createElement('canvas');
-      out.width = right - left + 1;
-      out.height = bottom - top + 1;
-      const outCtx = out.getContext('2d');
-      outCtx.drawImage(canvas, left, top, out.width, out.height, 0, 0, out.width, out.height);
-      return out.toDataURL('image/png');
+      if(current && lines.length<maxLines) lines.push(current);
+      return lines.slice(0,maxLines);
     }
 
-    document.querySelectorAll('[data-sign]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.activeSignature = btn.dataset.sign;
-        clearSignaturePad();
-        els.signatureTitle.textContent = state.activeSignature === 'visto' ? 'Assinatura do Visto' : 'Assinatura do Atesto';
-        els.signatureDialog.showModal();
-      });
-    });
+    function financeSvg(){
+      const data = formatDate($("fData").value);
+      const obra = $("fObra").value.trim();
+      const recebido = $("fRecebido").value.trim();
+      const desc = wrapText($("fDescricao").value,1035,2);
+      const combined = [$("fCT").value.trim(),$("fPedido").value.trim(),$("fTitulo").value.trim()].filter(Boolean).join(" / ");
+      const vistoDate = formatDate($("fVistoData").value);
+      const sign = state.signatures.financeiro || "";
 
-    document.querySelectorAll('[data-clear-sign]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const type = btn.dataset.clearSign;
-        if (!state.signatures[type]) return;
-        const label = type === 'visto' ? 'Visto' : 'Atesto';
-        if (!confirm(`Apagar a assinatura de ${label}?`)) return;
-        state.signatures[type] = '';
-        updateStampText();
-      });
-    });
-
-    $('clearPadBtn').addEventListener('click', clearSignaturePad);
-    $('closeSignatureDialog').addEventListener('click', () => els.signatureDialog.close());
-    $('cancelSignatureBtn').addEventListener('click', () => els.signatureDialog.close());
-
-    els.signatureFile.addEventListener('change', async (event) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      clearSignaturePad();
-      const trimmed = await trimSignatureDataUrl(dataUrl);
-      state.uploadedSignature = trimmed;
-      const img = await loadImage(trimmed);
-      const scale = Math.min(els.signatureCanvas.width / img.width, els.signatureCanvas.height / img.height) * 0.85;
-      const w = img.width * scale;
-      const h = img.height * scale;
-      sigCtx.drawImage(img, (els.signatureCanvas.width - w) / 2, (els.signatureCanvas.height - h) / 2, w, h);
-    });
-
-    $('saveSignatureBtn').addEventListener('click', async () => {
-      const dataUrl = els.signatureCanvas.toDataURL('image/png');
-      const trimmed = await trimSignatureDataUrl(dataUrl);
-      state.signatures[state.activeSignature] = trimmed;
-      updateStampText();
-      els.signatureDialog.close();
-    });
-
-    function cloneSvgForExport() {
-      const clone = els.stampSvg.cloneNode(true);
-      clone.setAttribute('width', '2400');
-      clone.setAttribute('height', '1290');
-      return clone;
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" preserveAspectRatio="none">
+          <rect id="stampPaper" x="8" y="8" width="1184" height="664" rx="2" fill="rgba(255,255,255,.94)" stroke="#111" stroke-width="2.6"/>
+          <g font-family="Calibri,Carlito,Arial,sans-serif" font-size="32" font-weight="700" fill="#111">
+            <text x="42" y="80">DATA:</text>
+            <text x="335" y="80">OBRA:</text>
+            <text x="42" y="166">RECEBIDO:</text>
+            <text x="42" y="252">DESCRIÇÃO:</text>
+            <text x="42" y="424">CT / PEDIDO / TÍTULO:</text>
+            <text x="42" y="510">VISTO:</text>
+            <text x="742" y="510">DATA:</text>
+            <text x="42" y="596">ATESTO:</text>
+            <text x="742" y="596">DATA:</text>
+          </g>
+          <g font-family="Roboto,Arial,sans-serif" font-size="36" font-weight="500" fill="#092c56">
+            <text x="145" y="80">${escapeXml(data)}</text>
+            <text x="435" y="80">${escapeXml(fitLine(obra,720))}</text>
+            <text x="225" y="166">${escapeXml(fitLine(recebido,930))}</text>
+            <text x="225" y="252">${escapeXml(desc[0]||"")}</text>
+            <text x="42" y="338">${escapeXml(desc[1]||"")}</text>
+            <text x="405" y="424">${escapeXml(fitLine(combined,750))}</text>
+            <text x="855" y="510">${escapeXml(vistoDate)}</text>
+          </g>
+          ${sign ? `<image href="${sign}" x="155" y="448" width="535" height="82" preserveAspectRatio="xMinYMid meet"/>` : ""}
+          <g stroke="#111" stroke-width="1.6">
+            <line x1="155" y1="528" x2="690" y2="528"/>
+            <line x1="155" y1="614" x2="690" y2="614"/>
+          </g>
+        </svg>`;
     }
 
-    async function stampToPngBytes() {
-      const clone = cloneSvgForExport();
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(clone);
-      const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+    function adminSvg(){
+      const date = formatDate($("aData").value);
+      const sign = state.signatures.administracao || "";
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 110" preserveAspectRatio="none">
+          ${sign ? `<image href="${sign}" x="155" y="5" width="535" height="94" preserveAspectRatio="xMinYMid meet"/>` : ""}
+          <text x="855" y="72" font-family="Roboto,Arial,sans-serif" font-size="36" font-weight="500" fill="#092c56">${escapeXml(date)}</text>
+        </svg>`;
+    }
 
-      try {
-        const img = await loadImage(url);
-        const canvas = document.createElement('canvas');
-        canvas.width = 2400;
-        canvas.height = 1290;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-        return new Uint8Array(await pngBlob.arrayBuffer());
-      } finally {
-        URL.revokeObjectURL(url);
+    function directorSvg(){
+      const lines = wrapText($("dObs").value,1055,3);
+      const date = formatDate($("dData").value);
+      const sign = state.signatures.diretoria || "";
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" preserveAspectRatio="none">
+          <rect id="stampPaper" x="8" y="8" width="1184" height="544" rx="3" fill="rgba(255,255,255,.94)" stroke="#b42318" stroke-width="3"/>
+          <rect x="27" y="27" width="1146" height="506" fill="none" stroke="#b42318" stroke-width="1.5"/>
+          <g fill="#b42318" font-family="Calibri,Carlito,Arial,sans-serif" font-weight="700">
+            <text x="52" y="78" font-size="40">CONFERÊNCIA DA DIRETORIA</text>
+            <text x="52" y="165" font-size="32">OBSERVAÇÕES:</text>
+            <text x="52" y="448" font-size="32">ASSINATURA:</text>
+            <text x="820" y="448" font-size="32">DATA:</text>
+          </g>
+          <g fill="#7a1f1a" font-family="Roboto,Arial,sans-serif" font-size="35" font-weight="500">
+            <text x="295" y="165">${escapeXml(lines[0]||"")}</text>
+            <text x="52" y="248">${escapeXml(lines[1]||"")}</text>
+            <text x="52" y="331">${escapeXml(lines[2]||"")}</text>
+            <text x="930" y="448">${escapeXml(date)}</text>
+          </g>
+          ${sign ? `<image href="${sign}" x="245" y="375" width="525" height="92" preserveAspectRatio="xMinYMid meet"/>` : ""}
+          <g stroke="#b42318" stroke-width="2">
+            <line x1="295" y1="180" x2="1135" y2="180"/>
+            <line x1="52" y1="263" x2="1135" y2="263"/>
+            <line x1="52" y1="346" x2="1135" y2="346"/>
+            <line x1="245" y1="469" x2="770" y2="469"/>
+          </g>
+          <text x="52" y="510" fill="#b42318" font-family="Calibri,Carlito,Arial,sans-serif" font-size="24" font-weight="700">DIRETORIA</text>
+        </svg>`;
+    }
+
+    function escapeXml(value){
+      return String(value??"").replace(/[<>&'"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]));
+    }
+
+    function renderActiveSvg(){
+      if(!state.role) return;
+      const markup = state.role==="financeiro" ? financeSvg() : state.role==="administracao" ? adminSvg() : directorSvg();
+      const doc = new DOMParser().parseFromString(markup,"image/svg+xml");
+      const source = doc.documentElement;
+      els.activeSvg.setAttribute("viewBox",source.getAttribute("viewBox"));
+      els.activeSvg.setAttribute("preserveAspectRatio","none");
+      els.activeSvg.innerHTML=source.innerHTML;
+      applyOpacity();
+      updateSignatureStatuses();
+      syncDownload();
+    }
+
+    function viewRatio(){
+      if(state.role==="administracao") return 1200/110;
+      if(state.role==="diretoria") return 1200/560;
+      return 1200/680;
+    }
+
+    function defaultWidthRatio(){
+      if(state.role==="administracao") return .50;
+      if(state.role==="diretoria") return .50;
+      return .52;
+    }
+
+    function minOverlayWidth(){ return window.innerWidth<=700 ? 180 : 220; }
+
+    function chooseRole(role, force=false){
+      if(!force && state.role && (state.pdfBytes || hasAnyData())){
+        if(!confirm("Trocar de etapa? O PDF e os dados atuais serão removidos.")) return;
+      }
+      state.role=role;
+      resetWorkspace(false);
+      resetForms();
+      els.roleScreen.classList.add("hidden");
+      els.panelPlaceholder.classList.add("hidden");
+      els.financePanel.classList.toggle("hidden",role!=="financeiro");
+      els.adminPanel.classList.toggle("hidden",role!=="administracao");
+      els.directorPanel.classList.toggle("hidden",role!=="diretoria");
+
+      const meta=roleMeta[role];
+      els.brandSubtitle.textContent=meta.subtitle;
+      els.roleBadge.textContent=`Etapa: ${meta.label}`;
+      els.roleBadge.classList.remove("hidden");
+      els.addOverlayBtn.textContent=meta.addLabel;
+      els.removeOverlayBtn.textContent=meta.removeLabel;
+      els.addOverlayBtn.className=`btn ${role==="diretoria"?"director":"success"}`;
+      els.overlay.dataset.mode=role;
+      els.overlay.classList.toggle("admin-guide",role==="administracao");
+      els.emptyTitle.textContent=meta.emptyTitle;
+      els.emptyText.textContent=meta.emptyText;
+      els.emptyState.style.display="grid";
+      renderActiveSvg();
+    }
+
+    document.querySelectorAll(".role-card").forEach(btn=>btn.addEventListener("click",()=>chooseRole(btn.dataset.role,true)));
+    $("changeRoleBtn").addEventListener("click",()=>{ els.roleScreen.classList.remove("hidden"); });
+
+    function activePageSelect(){
+      return state.role==="financeiro" ? $("financePageSelect") : state.role==="administracao" ? $("adminPageSelect") : $("directorPageSelect");
+    }
+    function activeOpacity(){
+      return state.role==="financeiro" ? $("financeOpacity") : state.role==="diretoria" ? $("directorOpacity") : null;
+    }
+
+    function setSizeButtonsEnabled(enabled){
+      document.querySelectorAll(".size-btn").forEach(b=>{b.disabled=!enabled;if(!enabled)b.classList.remove("active")});
+    }
+    function markActiveSize(size){
+      document.querySelectorAll(".size-btn").forEach(b=>b.classList.toggle("active",b.dataset.size===size));
+    }
+
+    function applyOpacity(){
+      const ctrl=activeOpacity();
+      const paper=els.activeSvg.querySelector("#stampPaper");
+      if(paper && ctrl){
+        paper.setAttribute("fill",`rgba(255,255,255,${Number(ctrl.value)/100})`);
       }
     }
 
-    els.downloadBtn.addEventListener('click', async () => {
-      if (!state.pdfBytes) return;
-      if (!state.stampVisible) {
-        alert('Adicione o carimbo antes de gerar o PDF.');
-        return;
+    document.querySelectorAll(".opacity-control").forEach(ctrl=>ctrl.addEventListener("input",applyOpacity));
+
+    async function loadPdf(file){
+      if(file.type!=="application/pdf"){ alert("Selecione um arquivo PDF."); return; }
+      if(state.pdfBytes && !confirm("Substituir o PDF atual? Os dados e a aplicação atual serão removidos.")) return;
+
+      state.pdfName=file.name;
+      state.pdfBytes=new Uint8Array(await file.arrayBuffer());
+      state.pdfDoc=await pdfjsLib.getDocument({data:state.pdfBytes.slice()}).promise;
+      state.pageCount=state.pdfDoc.numPages;
+      state.currentPage=1;
+      state.overlayPage=1;
+      state.overlayVisible=false;
+      els.overlay.classList.add("hidden");
+      els.emptyState.style.display="none";
+
+      [$("financePageSelect"),$("adminPageSelect"),$("directorPageSelect")].forEach(select=>{
+        select.innerHTML="";
+        for(let i=1;i<=state.pageCount;i++){
+          const opt=document.createElement("option");
+          opt.value=String(i);opt.textContent=`Página ${i}`;select.appendChild(opt);
+        }
+        select.value="1";
+        select.disabled=false;
+      });
+
+      els.newNoteBtn.disabled=false;
+      els.addOverlayBtn.disabled=false;
+      els.removeOverlayBtn.disabled=true;
+      setSizeButtonsEnabled(false);
+      await renderPage(1);
+      syncDownload();
+    }
+
+    els.pdfInput.addEventListener("change",async e=>{
+      const file=e.target.files?.[0];
+      if(!file) return;
+      await loadPdf(file);
+      els.pdfInput.value="";
+    });
+
+    async function renderPage(pageNumber){
+      if(!state.pdfDoc) return;
+      const page=await state.pdfDoc.getPage(pageNumber);
+      const viewport=page.getViewport({scale:state.renderScale});
+      const ctx=els.canvas.getContext("2d");
+      els.canvas.width=Math.ceil(viewport.width);
+      els.canvas.height=Math.ceil(viewport.height);
+      els.canvas.style.width=`${viewport.width}px`;
+      els.canvas.style.height=`${viewport.height}px`;
+      els.pageShell.style.width=`${viewport.width}px`;
+      els.pageShell.style.height=`${viewport.height}px`;
+      await page.render({canvasContext:ctx,viewport}).promise;
+      state.currentPage=pageNumber;
+      els.pageInfo.textContent=`Página ${pageNumber} de ${state.pageCount}`;
+      els.prevPageBtn.disabled=pageNumber<=1;
+      els.nextPageBtn.disabled=pageNumber>=state.pageCount;
+      syncOverlayVisibility();
+    }
+
+    els.prevPageBtn.addEventListener("click",()=>state.currentPage>1&&renderPage(state.currentPage-1));
+    els.nextPageBtn.addEventListener("click",()=>state.currentPage<state.pageCount&&renderPage(state.currentPage+1));
+
+    document.querySelectorAll(".page-select").forEach(select=>select.addEventListener("change",async()=>{
+      if(select!==activePageSelect()) return;
+      state.overlayPage=Number(select.value);
+      await renderPage(state.overlayPage);
+    }));
+
+    function syncOverlayVisibility(){
+      const show=state.overlayVisible && state.currentPage===state.overlayPage;
+      els.overlay.classList.toggle("hidden",!show);
+      els.removeOverlayBtn.disabled=!state.overlayVisible;
+      syncDownload();
+    }
+
+    function canDownload(){
+      if(!state.pdfBytes || !state.overlayVisible) return false;
+      if(state.role==="administracao") return Boolean(state.signatures.administracao);
+      if(state.role==="diretoria") return Boolean(state.signatures.diretoria);
+      return true;
+    }
+
+    function syncDownload(){ els.downloadBtn.disabled=!canDownload(); }
+
+    els.addOverlayBtn.addEventListener("click",()=>{
+      if(!state.pdfDoc) return;
+      state.overlayVisible=true;
+      state.overlayPage=state.currentPage;
+      activePageSelect().value=String(state.overlayPage);
+
+      const cw=els.canvas.clientWidth, ch=els.canvas.clientHeight;
+      let width=Math.max(minOverlayWidth(),Math.min(cw*defaultWidthRatio(),cw-12));
+      const ratio=viewRatio();
+      let height=width/ratio;
+      if(height>ch-12){height=ch-12;width=height*ratio}
+
+      els.overlay.style.width=`${width}px`;
+      els.overlay.style.height=`${height}px`;
+      els.overlay.style.left=`${Math.max(6,(cw-width)/2)}px`;
+      els.overlay.style.top=state.role==="administracao"
+        ? `${Math.max(6,ch-height-80)}px`
+        : `${Math.max(6,ch-height-26)}px`;
+
+      setSizeButtonsEnabled(state.role!=="administracao");
+      markActiveSize("medium");
+      renderActiveSvg();
+      syncOverlayVisibility();
+    });
+
+    els.removeOverlayBtn.addEventListener("click",()=>{
+      if(!confirm(`Remover ${roleMeta[state.role].addLabel.toLowerCase().replace("adicionar ","")} deste PDF?`)) return;
+      state.overlayVisible=false;setSizeButtonsEnabled(false);syncOverlayVisibility();
+    });
+
+    document.querySelectorAll(".size-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      if(!state.overlayVisible || state.role==="administracao") return;
+      const ratios={small:.34,medium:.52,large:.70};
+      const cw=els.canvas.clientWidth,ch=els.canvas.clientHeight,ratio=viewRatio();
+      let width=Math.max(minOverlayWidth(),Math.min(cw*ratios[btn.dataset.size],cw-10));
+      let height=width/ratio;
+      if(height>ch-10){height=ch-10;width=height*ratio}
+      const l=parseFloat(els.overlay.style.left)||0,t=parseFloat(els.overlay.style.top)||0;
+      const cx=l+els.overlay.offsetWidth/2,cy=t+els.overlay.offsetHeight/2;
+      els.overlay.style.width=`${width}px`;els.overlay.style.height=`${height}px`;
+      els.overlay.style.left=`${Math.min(Math.max(0,cx-width/2),Math.max(0,cw-width))}px`;
+      els.overlay.style.top=`${Math.min(Math.max(0,cy-height/2),Math.max(0,ch-height))}px`;
+      markActiveSize(btn.dataset.size);
+    }));
+
+    let dragMode=null,start=null;
+    els.overlay.addEventListener("pointerdown",e=>{
+      dragMode=e.target.classList.contains("resize-handle")?"resize":"move";
+      start={x:e.clientX,y:e.clientY,left:parseFloat(els.overlay.style.left)||0,top:parseFloat(els.overlay.style.top)||0,width:els.overlay.offsetWidth,height:els.overlay.offsetHeight};
+      els.overlay.setPointerCapture(e.pointerId);e.preventDefault();
+    });
+    els.overlay.addEventListener("pointermove",e=>{
+      if(!dragMode||!start) return;
+      const dx=e.clientX-start.x,dy=e.clientY-start.y,cw=els.canvas.clientWidth,ch=els.canvas.clientHeight;
+      if(dragMode==="move"){
+        const maxL=Math.max(0,cw-els.overlay.offsetWidth),maxT=Math.max(0,ch-els.overlay.offsetHeight);
+        els.overlay.style.left=`${Math.min(maxL,Math.max(0,start.left+dx))}px`;
+        els.overlay.style.top=`${Math.min(maxT,Math.max(0,start.top+dy))}px`;
+      }else{
+        markActiveSize("");
+        const ratio=viewRatio();
+        let width=Math.max(minOverlayWidth(),Math.min(start.width+dx,cw-start.left));
+        let height=width/ratio;
+        if(start.top+height>ch){height=ch-start.top;width=Math.max(minOverlayWidth(),height*ratio);height=width/ratio}
+        els.overlay.style.width=`${width}px`;els.overlay.style.height=`${height}px`;
       }
+    });
+    els.overlay.addEventListener("pointerup",()=>{dragMode=null;start=null});
 
-      els.downloadBtn.disabled = true;
-      els.downloadBtn.textContent = 'Gerando...';
-      try {
-        updateStampText();
-        const pdfDoc = await PDFDocument.load(state.pdfBytes.slice());
-        const page = pdfDoc.getPage(state.stampPage - 1);
-        const pngBytes = await stampToPngBytes();
-        const stampImage = await pdfDoc.embedPng(pngBytes);
+    const sigCtx=els.sigCanvas.getContext("2d");
+    function setupPen(){
+      sigCtx.lineWidth=5;sigCtx.lineCap="round";sigCtx.lineJoin="round";
+      sigCtx.strokeStyle=state.signingTarget==="diretoria"?"#b42318":"#092c56";
+    }
+    function clearPad(){
+      sigCtx.clearRect(0,0,els.sigCanvas.width,els.sigCanvas.height);
+      els.sigFile.value="";
+    }
+    function point(e){
+      const r=els.sigCanvas.getBoundingClientRect();
+      return {x:(e.clientX-r.left)*els.sigCanvas.width/r.width,y:(e.clientY-r.top)*els.sigCanvas.height/r.height};
+    }
+    els.sigCanvas.addEventListener("pointerdown",e=>{
+      state.drawing=true;state.lastPoint=point(e);els.sigCanvas.setPointerCapture(e.pointerId);
+    });
+    els.sigCanvas.addEventListener("pointermove",e=>{
+      if(!state.drawing) return;
+      const p=point(e);sigCtx.beginPath();sigCtx.moveTo(state.lastPoint.x,state.lastPoint.y);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();state.lastPoint=p;
+    });
+    els.sigCanvas.addEventListener("pointerup",()=>{state.drawing=false;state.lastPoint=null});
 
-        const canvasW = els.canvas.clientWidth;
-        const canvasH = els.canvas.clientHeight;
-        const pdfW = page.getWidth();
-        const pdfH = page.getHeight();
+    function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src})}
 
-        const left = parseFloat(els.stamp.style.left) || 0;
-        const top = parseFloat(els.stamp.style.top) || 0;
-        const stampW = els.stamp.offsetWidth;
-        const stampH = els.stamp.offsetHeight;
+    async function trimSignatureDataUrl(src){
+      const img=await loadImage(src);
+      const c=document.createElement("canvas");c.width=img.width;c.height=img.height;
+      const x=c.getContext("2d");x.drawImage(img,0,0);
+      const data=x.getImageData(0,0,c.width,c.height).data;
+      let left=c.width,right=0,top=c.height,bottom=0,found=false;
+      for(let y=0;y<c.height;y++){
+        for(let z=0;z<c.width;z++){
+          const q=(y*c.width+z)*4,R=data[q],G=data[q+1],B=data[q+2],A=data[q+3];
+          if(A>20 && !(R>245&&G>245&&B>245)){found=true;left=Math.min(left,z);right=Math.max(right,z);top=Math.min(top,y);bottom=Math.max(bottom,y)}
+        }
+      }
+      if(!found) return "";
+      const pad=14;
+      left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(c.width-1,right+pad);bottom=Math.min(c.height-1,bottom+pad);
+      const out=document.createElement("canvas");out.width=right-left+1;out.height=bottom-top+1;
+      out.getContext("2d").drawImage(c,left,top,out.width,out.height,0,0,out.width,out.height);
+      return out.toDataURL("image/png");
+    }
 
-        const scaleX = pdfW / canvasW;
-        const scaleY = pdfH / canvasH;
+    document.querySelectorAll(".sign-trigger").forEach(btn=>btn.addEventListener("click",()=>{
+      state.signingTarget=btn.dataset.signTarget;
+      const labels={financeiro:"Assinatura do Visto",administracao:"Assinatura do Atesto",diretoria:"Assinatura da Diretoria"};
+      els.sigTitle.textContent=labels[state.signingTarget];
+      clearPad();setupPen();els.dialog.showModal();
+    }));
 
-        const x = left * scaleX;
-        const width = stampW * scaleX;
-        const height = stampH * scaleY;
-        const y = pdfH - ((top + stampH) * scaleY);
+    document.querySelectorAll(".clear-sign").forEach(btn=>btn.addEventListener("click",()=>{
+      const target=btn.dataset.signTarget;
+      if(!state.signatures[target]) return;
+      if(!confirm("Apagar esta assinatura?")) return;
+      state.signatures[target]="";updateSignatureStatuses();renderActiveSvg();
+    }));
 
-        page.drawImage(stampImage, { x, y, width, height });
+    $("clearPadBtn").addEventListener("click",clearPad);
+    $("closeSignatureDialog").addEventListener("click",()=>els.dialog.close());
+    $("cancelSignatureBtn").addEventListener("click",()=>els.dialog.close());
 
-        const finalBytes = await pdfDoc.save();
-        const blob = new Blob([finalBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
+    els.sigFile.addEventListener("change",async e=>{
+      const file=e.target.files?.[0];if(!file) return;
+      const src=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});
+      clearPad();setupPen();
+      const trimmed=await trimSignatureDataUrl(src);
+      if(!trimmed) return;
+      const img=await loadImage(trimmed);
+      const scale=Math.min(els.sigCanvas.width/img.width,els.sigCanvas.height/img.height)*.84;
+      const w=img.width*scale,h=img.height*scale;
+      sigCtx.drawImage(img,(els.sigCanvas.width-w)/2,(els.sigCanvas.height-h)/2,w,h);
+    });
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${state.pdfName.replace(/\.pdf$/i, '')}_carimbado.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
+    $("saveSignatureBtn").addEventListener("click",async()=>{
+      const trimmed=await trimSignatureDataUrl(els.sigCanvas.toDataURL("image/png"));
+      if(!trimmed){alert("Adicione uma assinatura antes de continuar.");return}
+      state.signatures[state.signingTarget]=trimmed;
+      updateSignatureStatuses();renderActiveSvg();els.dialog.close();
+    });
 
-        els.notice.classList.add('show');
-        setTimeout(() => els.notice.classList.remove('show'), 2500);
-      } catch (error) {
-        console.error(error);
-        alert('Não foi possível gerar o PDF. Verifique o arquivo e tente novamente.');
-      } finally {
-        els.downloadBtn.disabled = !state.stampVisible;
-        els.downloadBtn.textContent = 'Baixar PDF final';
+    function updateSignatureStatuses(){
+      const map={
+        financeiro:$("financeSignatureStatus"),
+        administracao:$("adminSignatureStatus"),
+        diretoria:$("directorSignatureStatus")
+      };
+      Object.entries(map).forEach(([key,el])=>{
+        const added=Boolean(state.signatures[key]);
+        el.textContent=added?"Assinatura adicionada":"Nenhuma assinatura";
+        el.classList.toggle("added",added);
+      });
+      syncDownload();
+    }
+
+    function installHardLimit(input,counter){
+      const max=input.maxLength;
+      input.addEventListener("beforeinput",e=>{
+        if(!e.inputType?.startsWith("insert")||e.isComposing||e.inputType==="insertFromPaste") return;
+        const s=input.selectionStart??input.value.length,en=input.selectionEnd??s;
+        if(input.value.length-(en-s)+(e.data||"").length>max) e.preventDefault();
+      });
+      input.addEventListener("paste",e=>{
+        const pasted=e.clipboardData?.getData("text")||"",s=input.selectionStart??input.value.length,en=input.selectionEnd??s;
+        const available=max-(input.value.length-(en-s));
+        if(pasted.length<=available) return;
+        e.preventDefault();
+        if(available>0){input.setRangeText(pasted.slice(0,available),s,en,"end");input.dispatchEvent(new Event("input",{bubbles:true}))}
+      });
+      const update=()=>{
+        const n=input.value.length;counter.textContent=`${n}/${max}`;
+        counter.classList.toggle("near",n>=Math.ceil(max*.8)&&n<max);
+        counter.classList.toggle("limit",n>=max);
+      };
+      input.addEventListener("input",()=>{update();renderActiveSvg()});update();
+    }
+
+    [["fObra","fObraCount"],["fRecebido","fRecebidoCount"],["fDescricao","fDescricaoCount"],["fCT","fCTCount"],["fPedido","fPedidoCount"],["fTitulo","fTituloCount"],["dObs","dObsCount"]]
+      .forEach(([input,counter])=>installHardLimit($(input),$(counter)));
+
+    ["fData","fVistoData","aData","dData"].forEach(id=>$(id).addEventListener("input",renderActiveSvg));
+
+    function hasAnyData(){
+      return ["fObra","fRecebido","fDescricao","fCT","fPedido","fTitulo","dObs"].some(id=>$(id).value.trim()) ||
+        Object.values(state.signatures).some(Boolean);
+    }
+
+    function resetForms(){
+      ["fObra","fRecebido","fDescricao","fCT","fPedido","fTitulo","dObs"].forEach(id=>{$(id).value="";$(id).dispatchEvent(new Event("input",{bubbles:true}))});
+      ["fData","fVistoData","aData","dData"].forEach(id=>$(id).value=localISO);
+      state.signatures={financeiro:"",administracao:"",diretoria:""};
+      updateSignatureStatuses();renderActiveSvg();
+    }
+
+    document.querySelectorAll(".clear-form").forEach(btn=>btn.addEventListener("click",()=>{
+      if(!hasAnyData()) return;
+      if(!confirm("Limpar os dados e assinaturas desta etapa?")) return;
+      resetForms();
+    }));
+
+    function resetWorkspace(resetRole=true){
+      state.pdfBytes=null;state.pdfDoc=null;state.pdfName="documento.pdf";state.currentPage=1;state.pageCount=0;state.overlayVisible=false;state.overlayPage=1;
+      els.pdfInput.value="";
+      els.canvas.width=0;els.canvas.height=0;els.canvas.style.width="0px";els.canvas.style.height="0px";
+      els.pageShell.style.width="0px";els.pageShell.style.height="0px";
+      els.pageInfo.textContent="Nenhum PDF carregado";
+      els.prevPageBtn.disabled=els.nextPageBtn.disabled=true;
+      els.newNoteBtn.disabled=els.addOverlayBtn.disabled=els.removeOverlayBtn.disabled=els.downloadBtn.disabled=true;
+      els.overlay.classList.add("hidden");
+      setSizeButtonsEnabled(false);
+      document.querySelectorAll(".page-select").forEach(s=>{s.innerHTML="";s.disabled=true});
+      if(state.role){
+        els.emptyTitle.textContent=roleMeta[state.role].emptyTitle;
+        els.emptyText.textContent=roleMeta[state.role].emptyText;
+      }
+      els.emptyState.style.display="grid";
+      if(resetRole){state.role=null}
+    }
+
+    els.newNoteBtn.addEventListener("click",()=>{
+      if(!confirm("Iniciar uma nova nota? O PDF atual e os dados desta etapa serão removidos.")) return;
+      resetWorkspace(false);resetForms();
+    });
+
+    function cloneSvgForExport(){
+      const clone=els.activeSvg.cloneNode(true);
+      const box=els.activeSvg.getAttribute("viewBox").split(/\s+/).map(Number);
+      const w=2400,h=Math.round(2400*(box[3]/box[2]));
+      clone.setAttribute("width",String(w));clone.setAttribute("height",String(h));
+      clone.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+      return {clone,w,h};
+    }
+
+    async function svgToPngBytes(){
+      const {clone,w,h}=cloneSvgForExport();
+      const str=new XMLSerializer().serializeToString(clone);
+      const blob=new Blob([str],{type:"image/svg+xml;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      try{
+        const img=await loadImage(url);
+        const c=document.createElement("canvas");c.width=w;c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        const png=await new Promise(resolve=>c.toBlob(resolve,"image/png"));
+        return new Uint8Array(await png.arrayBuffer());
+      }finally{URL.revokeObjectURL(url)}
+    }
+
+    els.downloadBtn.addEventListener("click",async()=>{
+      if(!canDownload()) return;
+      els.downloadBtn.disabled=true;els.downloadBtn.textContent="Gerando...";
+      try{
+        renderActiveSvg();
+        const pdf=await PDFDocument.load(state.pdfBytes.slice());
+        const page=pdf.getPage(state.overlayPage-1);
+        const image=await pdf.embedPng(await svgToPngBytes());
+
+        const cw=els.canvas.clientWidth,ch=els.canvas.clientHeight,pw=page.getWidth(),ph=page.getHeight();
+        const left=parseFloat(els.overlay.style.left)||0,top=parseFloat(els.overlay.style.top)||0,ow=els.overlay.offsetWidth,oh=els.overlay.offsetHeight;
+        const sx=pw/cw,sy=ph/ch;
+        page.drawImage(image,{x:left*sx,y:ph-(top+oh)*sy,width:ow*sx,height:oh*sy});
+
+        const bytes=await pdf.save();
+        const url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+        const a=document.createElement("a");
+        const base=state.pdfName.replace(/\.pdf$/i,"");
+        a.href=url;a.download=base+roleMeta[state.role].suffix;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1500);
+        els.notice.classList.add("show");setTimeout(()=>els.notice.classList.remove("show"),2500);
+      }catch(err){
+        console.error(err);alert("Não foi possível gerar o PDF. Verifique o arquivo e tente novamente.");
+      }finally{
+        els.downloadBtn.textContent="Baixar PDF final";syncDownload();
       }
     });
 
-    const today = new Date();
-    const localISO = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    $('fData').value = localISO;
-    updateStampText();
-    countedFields.forEach(updateCharacterCounter);
-    setSizeButtonsEnabled(false);
+    updateSignatureStatuses();
   </script>
 </body>
 </html>
