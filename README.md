@@ -1,30 +1,22 @@
-# Carimbo Digital - Itaúba
+# CARIMBO DIGITAL v14b — Supabase
 
-Ferramenta web para aplicação de carimbo digital em notas fiscais em PDF.
+Esta versão foi conectada ao projeto Supabase da empresa.
 
-## Objetivo
+## O que mudou
 
-Substituir o processo manual de imprimir a nota, aplicar o carimbo físico, preencher os campos, coletar assinaturas e digitalizar novamente.
+- Login por e-mail e senha via Supabase Auth.
+- O setor do usuário vem da tabela `profiles`.
+- A fila é carregada da tabela `documents`.
+- PDFs são armazenados no bucket privado `documentos`.
+- Cada etapa cria uma linha em `document_versions` e em `document_history`.
+- Financeiro cria o documento e envia para `aguardando_atesto`.
+- Administração envia para `aguardando_diretoria`.
+- Diretoria conclui e o documento aparece em `Concluídos`.
 
-Todo o processamento é feito diretamente no navegador.
+## Configuração embutida
 
-## Funcionalidades
+O arquivo `index.html` contém apenas o Project URL e a Publishable Key do Supabase. A Publishable Key é própria para uso no navegador e não substitui as regras RLS. Nenhuma Secret Key ou `service_role` foi incluída.
 
-- Envio de nota fiscal em PDF.
-- Visualização das páginas do documento.
-- Aplicação do carimbo digital.
-- Preenchimento dos dados do carimbo.
-- Inclusão de assinaturas desenhadas ou enviadas em imagem.
-- Posicionamento e redimensionamento do carimbo.
-- Escolha da página onde o carimbo será aplicado.
-- Download do PDF final carimbado.
+## Antes de uso real
 
-## Privacidade
-
-Os documentos e assinaturas são processados localmente no navegador. A ferramenta não mantém histórico nem armazena os PDFs em servidor.
-
-## Publicação
-
-A aplicação é estática e pode ser publicada pelo GitHub Pages.
-
-Use o arquivo `index.html` na raiz do repositório.
+Testar todo o fluxo com documentos fictícios e revisar as regras de permissão antes de usar documentos confidenciais.
