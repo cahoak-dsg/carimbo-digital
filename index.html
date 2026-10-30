@@ -1,0 +1,2917 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Carimbo de Notas - Itaúba Incorporações e Construções</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#f3f5f8;
+      --panel:#fff;
+      --ink:#202124;
+      --muted:#687080;
+      --line:#d8dce3;
+      --blue:#2856d8;
+      --blue-dark:#1f46b4;
+      --green:#18864b;
+      --green-dark:#116b3a;
+      --red:#b42318;
+      --red-dark:#8f1c14;
+      --response:#092c56;
+      --shadow:0 8px 28px rgba(20,30,55,.10);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+    button,input,textarea,select{font:inherit}
+    button{border:0}
+    .hidden{display:none!important}
+
+    .topbar{
+      position:sticky;top:0;z-index:40;
+      display:flex;align-items:center;gap:9px;
+      padding:10px 14px;background:rgba(255,255,255,.97);
+      border-bottom:1px solid var(--line);backdrop-filter:blur(8px)
+    }
+    .brand{display:flex;flex-direction:column;margin-right:auto;min-width:320px}
+    .brand strong{font-size:15px;line-height:1.25}
+    .brand span{font-size:12px;color:var(--muted);line-height:1.3;margin-top:2px}
+    .role-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 9px;border-radius:999px;background:#f4f6fa;
+      border:1px solid var(--line);font-size:11px;font-weight:700;color:#4b5362;
+      margin-top:5px;width:max-content
+    }
+
+    .btn{
+      appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+      border-radius:8px;cursor:pointer;transition:.15s ease;white-space:nowrap
+    }
+    .topbar>.btn,.topbar>label.btn{
+      width:138px;height:36px;display:inline-flex;align-items:center;justify-content:center;
+      flex:0 0 138px;padding:0 10px;border-radius:8px;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      font-size:13px;font-weight:600;line-height:1
+    }
+    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+    .btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+    .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+    .btn.primary:hover:not(:disabled){background:var(--blue-dark)}
+    .btn.success{background:var(--green);border-color:var(--green);color:#fff}
+    .btn.success:hover:not(:disabled){background:var(--green-dark)}
+    .btn.director{background:var(--red);border-color:var(--red);color:#fff}
+    .btn.director:hover:not(:disabled){background:var(--red-dark)}
+    .btn.danger{color:var(--red);background:#fff}
+    .btn.compact{padding:7px 10px;font-size:12px;font-weight:600}
+    .btn.active{border-color:var(--blue);background:#eef3ff;color:#2349bd;font-weight:700}
+    .file-input{display:none}
+
+    .layout{
+      display:grid;grid-template-columns:minmax(0,1fr) 390px;
+      gap:16px;padding:16px;min-height:calc(100vh - 58px)
+    }
+    .viewer-card,.panel-card{
+      background:var(--panel);border:1px solid var(--line);border-radius:14px;
+      box-shadow:var(--shadow)
+    }
+    .viewer-card{min-width:0;display:flex;flex-direction:column;overflow:hidden}
+    .viewer-toolbar{
+      display:flex;align-items:center;gap:8px;padding:10px 12px;
+      border-bottom:1px solid var(--line);background:#fafbfc
+    }
+    .viewer-toolbar .spacer{flex:1}
+    .page-info{font-size:13px;color:var(--muted)}
+    .document-area{
+      position:relative;flex:1;min-height:620px;overflow:auto;padding:26px;
+      background:
+        linear-gradient(45deg,#eceff3 25%,transparent 25%),
+        linear-gradient(-45deg,#eceff3 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#eceff3 75%),
+        linear-gradient(-45deg,transparent 75%,#eceff3 75%);
+      background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0
+    }
+    .page-shell{position:relative;width:fit-content;margin:0 auto;background:#fff;box-shadow:0 10px 32px rgba(0,0,0,.18)}
+    #pdfCanvas{display:block;max-width:none}
+    .empty-state{
+      position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+      padding:40px;color:var(--muted);pointer-events:none
+    }
+    .empty-state strong{display:block;color:var(--ink);font-size:20px;margin-bottom:7px}
+    .empty-state span{font-size:13px;line-height:1.55}
+
+    #overlay{
+      position:absolute;left:30px;top:30px;width:520px;height:295px;
+      user-select:none;touch-action:none;cursor:move;z-index:10;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.13))
+    }
+    #overlay.hidden{display:none}
+    #overlay.admin-guide{outline:2px dashed rgba(40,86,216,.65);outline-offset:3px;filter:none}
+    #activeSvg{display:block;width:100%;height:100%;overflow:visible}
+
+    /* Rolagem unificada: o painel acompanha a altura do conteudo da pagina. */
+    .panel-card{padding:15px;overflow:visible;max-height:none;align-self:start}
+    .viewer-card{align-self:start}
+    .panel-card h2{margin:0 0 4px;font-size:18px}
+    #financePanel>h2,#adminPanel>h2,#directorPanel>h2{margin-bottom:17px}
+    .helper{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.45}
+    .instructions{
+      margin:0 0 16px;padding:12px 13px;border:1px solid #dbe2f2;border-radius:10px;
+      background:#f8faff;color:#485268;font-size:12px;line-height:1.5
+    }
+    .instructions.red{border-color:#f0d0cc;background:#fff8f7;color:#64332e}
+    .instructions strong{display:block;margin-bottom:5px;color:var(--ink);font-size:13px}
+    .instructions ol{margin:0;padding-left:18px}.instructions li+li{margin-top:3px}
+    .section{padding:14px 0;border-top:1px solid var(--line)}
+    .section:first-of-type{border-top:0;padding-top:0}
+    .section-title{font-weight:700;font-size:14px;margin-bottom:10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field.full{grid-column:1/-1}
+    label{font-size:12px;font-weight:700;color:#404653}
+    input,textarea,select{
+      width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+      background:#fff;color:var(--ink);outline:none
+    }
+    textarea{min-height:86px;resize:vertical}
+    input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(40,86,216,.10)}
+    .director-panel input:focus,.director-panel textarea:focus,.director-panel select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(180,35,24,.10)}
+    .label-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .char-counter{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .char-counter.near{color:#a26000;font-weight:700}.char-counter.limit{color:var(--red);font-weight:700}
+    .signature-row{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center}
+    .signature-status{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .signature-status.added{color:var(--green);font-weight:700}
+    .size-buttons,.panel-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .size-buttons .btn{flex:1 1 85px}
+    .panel-actions .btn{flex:1 1 150px}
+    .privacy{margin-top:12px;padding:10px;border-radius:9px;background:#f6f7f9;color:#4d5562;font-size:12px;line-height:1.45}
+    .admin-tip{padding:11px;border:1px dashed #b8c4dc;border-radius:9px;background:#fbfcff;color:#536077;font-size:12px;line-height:1.45}
+
+    .role-screen{
+      position:fixed;inset:0;z-index:100;background:rgba(244,246,249,.98);
+      display:grid;place-items:center;padding:24px
+    }
+    .role-box{
+      width:min(850px,100%);background:#fff;border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 18px 70px rgba(21,31,50,.14);padding:28px
+    }
+    .role-box h1{margin:0;font-size:25px;line-height:1.2}
+    .role-box>p{margin:8px 0 22px;color:var(--muted);font-size:14px}
+    .role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .role-card{
+      text-align:left;padding:18px;border:1px solid var(--line);border-radius:13px;
+      background:#fff;cursor:pointer;transition:.15s ease;min-height:150px
+    }
+    .role-card:hover{transform:translateY(-2px);box-shadow:0 9px 24px rgba(30,42,70,.10);border-color:#b8c4dc}
+    .role-card.directoria:hover{border-color:#e2aaa4}
+    .role-icon{
+      display:grid;place-items:center;width:34px;height:34px;border-radius:9px;
+      background:#eef3ff;color:var(--blue);font-weight:800;font-size:13px;margin-bottom:13px
+    }
+    .role-card.directoria .role-icon{background:#fff0ee;color:var(--red)}
+    .role-card strong{display:block;font-size:16px;margin-bottom:7px}
+    .role-card span{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+    .role-foot{margin-top:18px;padding-top:15px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+
+    dialog{border:0;border-radius:14px;padding:0;box-shadow:0 20px 70px rgba(0,0,0,.30);width:min(560px,calc(100vw - 28px))}
+    dialog::backdrop{background:rgba(12,18,30,.55)}
+    .dialog-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .dialog-body{padding:16px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+    #signatureCanvas{width:100%;height:220px;display:block;border:1px dashed #9aa3b2;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair}
+    .upload-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+    .notice{display:none;font-size:12px;color:var(--green);font-weight:700}.notice.show{display:inline}
+
+    @media(max-width:1200px){
+      .topbar>.btn,.topbar>label.btn{width:124px;flex-basis:124px}
+      .brand{min-width:280px}
+    }
+    @media(max-width:1020px){
+      .layout{grid-template-columns:1fr}.panel-card{max-height:none}
+      .document-area{min-height:560px}.topbar{flex-wrap:wrap}.brand{width:100%}
+    }
+    @media(max-width:700px){
+      .role-grid{grid-template-columns:1fr}.role-card{min-height:auto}
+      .role-box{padding:20px}.role-box h1{font-size:21px}
+      .topbar>.btn,.topbar>label.btn{width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
+      .layout{padding:8px;gap:8px}.document-area{padding:12px;min-height:480px}
+      .grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+      #overlay{width:330px;height:187px}
+    }
+  
+    /* ===== V17 · refinamento de UI / identidade Itaúba ===== */
+    :root{
+      --itauba-navy:#092c56;
+      --itauba-navy-2:#143e68;
+      --itauba-blue-soft:#eef4fb;
+      --itauba-line:#dbe4ef;
+      --itauba-surface:#f7f9fc;
+      --itauba-dark:#17212d;
+      --itauba-red:#b42318;
+      --shadow-soft:0 10px 30px rgba(14,39,72,.08);
+      --shadow-card:0 14px 34px rgba(14,39,72,.11);
+      --shadow-hover:0 18px 42px rgba(14,39,72,.15);
+    }
+
+    body{
+      background:
+        radial-gradient(circle at 8% 0%, rgba(9,44,86,.055), transparent 30%),
+        linear-gradient(180deg,#f7f9fc 0%,#f2f5f9 100%);
+    }
+
+    .topbar{
+      padding:12px 16px;
+      border-bottom:1px solid rgba(9,44,86,.10);
+      box-shadow:0 6px 22px rgba(9,44,86,.055);
+    }
+
+    .brand{
+      min-width:360px;
+      padding-left:13px;
+      position:relative;
+    }
+    .brand::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:2px;
+      bottom:2px;
+      width:4px;
+      border-radius:10px;
+      background:var(--itauba-navy);
+    }
+    .brand-kicker{
+      font-size:9px;
+      line-height:1;
+      letter-spacing:.16em;
+      font-weight:800;
+      color:var(--itauba-navy);
+      margin-bottom:4px;
+    }
+    .brand strong{
+      color:var(--itauba-dark);
+      font-size:15px;
+      letter-spacing:-.015em;
+    }
+    .brand span:not(.role-badge){
+      color:#6d7685;
+    }
+    .role-badge{
+      margin-top:6px;
+      padding:5px 9px;
+      background:var(--itauba-blue-soft);
+      border-color:#d8e4f1;
+      color:var(--itauba-navy);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);
+    }
+
+    .topbar>.btn,.topbar>label.btn{
+      border-radius:10px;
+      height:36px;
+      font-size:12.5px;
+      box-shadow:0 2px 7px rgba(9,44,86,.035);
+    }
+    .topbar>.btn:hover:not(:disabled),
+    .topbar>label.btn:hover:not(:disabled){
+      box-shadow:0 7px 18px rgba(9,44,86,.12);
+    }
+
+    .btn.primary{
+      background:var(--itauba-navy);
+      border-color:var(--itauba-navy);
+    }
+    .btn.primary:hover:not(:disabled){background:#071f3d}
+    .btn.success{
+      background:#1d8055;
+      border-color:#1d8055;
+    }
+    .btn.success:hover:not(:disabled){background:#176b48}
+    .btn.director{
+      background:var(--itauba-red);
+      border-color:var(--itauba-red);
+    }
+
+    .layout{
+      gap:18px;
+      padding:18px;
+    }
+    .viewer-card,.panel-card{
+      border-radius:18px;
+      border-color:rgba(9,44,86,.10);
+      box-shadow:var(--shadow-soft);
+    }
+    .viewer-card{overflow:hidden}
+    .viewer-toolbar{
+      min-height:50px;
+      padding:10px 14px;
+      background:linear-gradient(180deg,#ffffff,#fbfcfe);
+      border-bottom-color:rgba(9,44,86,.09);
+    }
+    .document-area{
+      background-color:#eef2f6;
+      background-image:
+        linear-gradient(45deg,rgba(9,44,86,.035) 25%,transparent 25%),
+        linear-gradient(-45deg,rgba(9,44,86,.035) 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,rgba(9,44,86,.035) 75%),
+        linear-gradient(-45deg,transparent 75%,rgba(9,44,86,.035) 75%);
+    }
+    .page-shell{
+      border-radius:3px;
+      overflow:visible;
+      box-shadow:0 18px 45px rgba(18,31,48,.20);
+    }
+
+    .panel-card{
+      padding:18px;
+      background:rgba(255,255,255,.97);
+    }
+    .panel-card h2{
+      color:var(--itauba-dark);
+      font-size:19px;
+      letter-spacing:-.02em;
+      margin-bottom:5px;
+    }
+    .helper{
+      color:#6b7482;
+      margin-bottom:18px;
+    }
+    .section{
+      padding:16px 0;
+      border-top-color:rgba(9,44,86,.09);
+    }
+    .section-title{
+      color:#2c3745;
+      font-size:13px;
+      letter-spacing:.01em;
+    }
+    label{
+      color:#46515f;
+      font-size:11.5px;
+      letter-spacing:.005em;
+    }
+    input,textarea,select{
+      min-height:39px;
+      border-radius:10px;
+      border-color:#dce3ec;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(22,33,48,.02);
+    }
+    input:hover,textarea:hover,select:hover{
+      border-color:#c9d4e1;
+    }
+    input:focus,textarea:focus,select:focus{
+      border-color:var(--itauba-navy);
+      box-shadow:0 0 0 3px rgba(9,44,86,.08);
+    }
+
+    .instructions{
+      position:relative;
+      padding:14px 14px 14px 16px;
+      border-radius:12px;
+      background:linear-gradient(180deg,#f8fbff,#f5f8fc);
+      border-color:#d9e5f1;
+      color:#536174;
+      box-shadow:inset 3px 0 0 var(--itauba-navy);
+    }
+    .instructions strong{
+      color:var(--itauba-navy);
+      margin-bottom:7px;
+    }
+    .instructions.red{
+      background:linear-gradient(180deg,#fff9f8,#fff6f5);
+      box-shadow:inset 3px 0 0 var(--itauba-red);
+    }
+    .instructions.red strong{color:var(--itauba-red)}
+
+    .admin-tip{
+      border-radius:11px;
+      border-color:#bfcde0;
+      background:#f8fbff;
+      color:#536174;
+      box-shadow:inset 3px 0 0 #6f86a4;
+    }
+
+    .privacy{
+      border-radius:11px;
+      background:#f7f9fb;
+      border:1px solid rgba(9,44,86,.065);
+      color:#687280;
+    }
+
+    .btn{
+      border-radius:9px;
+      border-color:#d9e0e8;
+    }
+    .btn.compact{
+      border-radius:8px;
+    }
+
+    .role-screen{
+      background:
+        radial-gradient(circle at 15% 20%,rgba(9,44,86,.10),transparent 34%),
+        radial-gradient(circle at 92% 88%,rgba(9,44,86,.055),transparent 29%),
+        linear-gradient(145deg,#f7f9fc,#eef3f8);
+    }
+    .role-screen::before{
+      content:"";
+      position:fixed;
+      inset:auto 0 0 0;
+      height:7px;
+      background:var(--itauba-navy);
+      opacity:.95;
+    }
+    .role-box{
+      width:min(900px,100%);
+      border-radius:22px;
+      padding:32px;
+      border-color:rgba(9,44,86,.10);
+      box-shadow:0 25px 80px rgba(9,44,86,.16);
+      position:relative;
+      overflow:hidden;
+    }
+    .role-box::after{
+      content:"";
+      position:absolute;
+      width:210px;
+      height:210px;
+      right:-100px;
+      top:-105px;
+      border-radius:50%;
+      background:rgba(9,44,86,.035);
+      pointer-events:none;
+    }
+    .role-brand{
+      display:flex;
+      align-items:baseline;
+      gap:7px;
+      margin-bottom:11px;
+      color:var(--itauba-navy);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+    }
+    .role-brand span{
+      font-size:8px;
+      letter-spacing:.12em;
+      color:#7a8491;
+      font-weight:800;
+    }
+    .role-box h1{
+      color:var(--itauba-dark);
+      font-size:27px;
+      letter-spacing:-.035em;
+      max-width:620px;
+    }
+    .role-box>p{
+      max-width:650px;
+      color:#697483;
+      margin-top:9px;
+      margin-bottom:25px;
+    }
+    .role-grid{
+      gap:14px;
+    }
+    .role-card{
+      position:relative;
+      min-height:175px;
+      padding:18px 18px 20px;
+      border-radius:16px;
+      border-color:#dde4ec;
+      box-shadow:0 6px 18px rgba(9,44,86,.045);
+      overflow:hidden;
+    }
+    .role-card::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:4px;
+      background:var(--itauba-navy);
+      opacity:.88;
+    }
+    .role-card:hover{
+      transform:translateY(-3px);
+      border-color:#c7d4e3;
+      box-shadow:var(--shadow-hover);
+    }
+    .role-card.directoria::before{background:var(--itauba-red)}
+    .role-card.directoria:hover{border-color:#e3b5af}
+    .role-card-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .role-icon{
+      margin:0;
+      width:38px;
+      height:38px;
+      border-radius:11px;
+      background:var(--itauba-blue-soft);
+      color:var(--itauba-navy);
+      box-shadow:inset 0 0 0 1px rgba(9,44,86,.055);
+    }
+    .role-step{
+      font-size:9px!important;
+      line-height:1!important;
+      letter-spacing:.12em;
+      font-weight:800;
+      color:#8a94a0!important;
+    }
+    .role-card.directoria .role-icon{
+      background:#fff0ee;
+      color:var(--itauba-red);
+    }
+    .role-card strong{
+      color:var(--itauba-dark);
+      font-size:17px;
+      letter-spacing:-.02em;
+      margin-bottom:8px;
+    }
+    .role-card>span{
+      color:#687382;
+      line-height:1.55;
+    }
+    .role-foot{
+      margin-top:21px;
+      padding-top:17px;
+      color:#7a8491;
+    }
+
+    .empty-state strong{
+      color:#263340;
+      font-size:19px;
+      letter-spacing:-.02em;
+    }
+    .empty-state span{color:#77818e}
+
+    .signature-status.added{
+      color:#19704d;
+    }
+
+    @media(max-width:700px){
+      .role-box{padding:22px;border-radius:18px}
+      .role-card{min-height:auto}
+      .brand{min-width:0;padding-left:11px}
+      .brand-kicker{display:none}
+      .layout{padding:9px}
+    }
+
+  
+    /* ===== V18 · QA de UI/UX ===== */
+    :root{
+      --stage-finance:#747b84;
+      --stage-admin:#174f84;
+      --stage-director:#e8872f;
+      --stage-director-dark:#c96e1e;
+      --warning-bg:#fff7df;
+      --warning-border:#efcc72;
+      --warning-text:#755614;
+    }
+
+    .role-box{
+      width:min(880px,100%);
+    }
+    .role-box h1{
+      margin-bottom:24px;
+    }
+    .role-box>p,
+    .role-foot,
+    .role-step{
+      display:none!important;
+    }
+    .role-card-top{
+      justify-content:flex-start;
+      margin-bottom:15px;
+    }
+    .role-icon{
+      width:42px;
+      height:42px;
+      border-radius:11px;
+      font-size:14px;
+      line-height:1;
+    }
+
+    .role-card.role-finance::before{background:var(--stage-finance)}
+    .role-card.role-finance .role-icon{
+      background:#f0f2f4;
+      color:#5f6670;
+      box-shadow:inset 0 0 0 1px rgba(80,88,98,.08);
+    }
+    .role-card.role-finance:hover{border-color:#cfd4da}
+
+    .role-card.role-admin::before{background:var(--stage-admin)}
+    .role-card.role-admin .role-icon{
+      background:#edf4fb;
+      color:var(--stage-admin);
+      box-shadow:inset 0 0 0 1px rgba(23,79,132,.07);
+    }
+    .role-card.role-admin:hover{border-color:#bdd0e1}
+
+    .role-card.role-director::before{background:var(--stage-director)}
+    .role-card.role-director .role-icon{
+      background:#fff2e7;
+      color:var(--stage-director-dark);
+      box-shadow:inset 0 0 0 1px rgba(232,135,47,.10);
+    }
+    .role-card.role-director:hover{border-color:#efc49c}
+
+    .stage-nav{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      padding:4px;
+      border:1px solid #dde3eb;
+      border-radius:12px;
+      background:#f5f7fa;
+      box-shadow:inset 0 1px 2px rgba(20,35,50,.03);
+      flex:0 0 auto;
+    }
+    .stage-btn{
+      appearance:none;
+      height:30px;
+      padding:0 11px;
+      border-radius:8px;
+      border:0;
+      background:transparent;
+      color:#737c88;
+      font-size:11px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .stage-btn:hover{
+      background:#fff;
+      color:#3f4854;
+    }
+    .stage-btn.active[data-stage-role="financeiro"]{
+      background:#727982;
+      color:#fff;
+      box-shadow:0 3px 9px rgba(80,88,98,.18);
+    }
+    .stage-btn.active[data-stage-role="administracao"]{
+      background:var(--stage-admin);
+      color:#fff;
+      box-shadow:0 3px 9px rgba(23,79,132,.20);
+    }
+    .stage-btn.active[data-stage-role="diretoria"]{
+      background:var(--stage-director);
+      color:#fff;
+      box-shadow:0 3px 9px rgba(232,135,47,.22);
+    }
+
+    .role-badge{display:none!important}
+
+    #adminPanel .signature-row{
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    #adminPanel .signature-status{
+      grid-column:1/-1;
+      display:flex;
+      align-items:center;
+      min-height:38px;
+      padding:9px 10px;
+      border:1px solid #dce3eb;
+      border-radius:9px;
+      background:#f7f9fb;
+      font-size:13px;
+      font-weight:700;
+      color:#747d89;
+      white-space:normal;
+    }
+    #adminPanel .signature-status.added{
+      border-color:#b9dfcc;
+      background:#f1faf5;
+      color:#18744d;
+    }
+    #adminPanel .signature-row .btn{
+      width:100%;
+    }
+
+    .admin-tip{
+      margin-top:10px;
+      padding:10px 11px;
+      border:1px solid var(--warning-border);
+      border-radius:9px;
+      background:var(--warning-bg);
+      color:var(--warning-text);
+      box-shadow:none;
+      font-size:11.5px;
+      line-height:1.45;
+    }
+
+    .panel-actions{
+      justify-content:flex-end;
+    }
+    .clear-form{
+      flex:0 0 auto!important;
+      padding:8px 12px!important;
+      background:#f7f9fb!important;
+      color:#697381!important;
+      border:1px solid #dce3eb!important;
+      box-shadow:none!important;
+      font-size:12px!important;
+      font-weight:600!important;
+    }
+    .clear-form:hover:not(:disabled){
+      background:#eef2f6!important;
+      color:#4f5966!important;
+      transform:none!important;
+    }
+
+    .notice{
+      max-width:310px;
+      padding:6px 9px;
+      border-radius:8px;
+      background:#eef8f2;
+      border:1px solid #cce7d7;
+      color:#176a48;
+      line-height:1.3;
+    }
+
+    @media(max-width:1280px){
+      .stage-nav{
+        order:3;
+      }
+      .stage-btn{
+        padding:0 8px;
+      }
+    }
+
+    @media(max-width:1020px){
+      .stage-nav{
+        order:2;
+        width:100%;
+      }
+      .stage-btn{
+        flex:1 1 0;
+      }
+    }
+
+    @media(max-width:700px){
+      .role-grid{gap:10px}
+      .role-box h1{margin-bottom:18px}
+    }
+
+    /* Navegação por perfil e ações no contexto de uso. */
+    .topbar>.back-to-roles{
+      width:auto;flex:0 0 auto;min-width:170px;padding:0 13px;
+      color:var(--itauba-navy);background:#f6f9fd;
+    }
+    .empty-state>.empty-content{max-width:420px}
+    .empty-state>div{
+      display:flex;flex-direction:column;align-items:center;
+      max-width:470px;gap:0;pointer-events:auto;
+    }
+    .empty-state strong{margin-bottom:6px}
+    .empty-upload{
+      margin-top:19px;min-width:180px;min-height:43px;padding:11px 26px;
+      font-size:14px;font-weight:700;box-shadow:0 5px 14px rgba(9,44,86,.16);
+    }
+    .stamp-actions{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;
+      margin-top:14px;padding-top:16px;border-top:1px solid var(--itauba-line);
+    }
+    .stamp-actions .btn{min-width:0;padding:12px 9px;font-size:13px;font-weight:700}
+    .viewer-toolbar #changePdfBtn{margin-left:6px}
+    @media(min-width:1021px){.viewer-card{align-self:stretch}}
+    @media(max-width:1020px){
+      .topbar{justify-content:flex-start}
+      .topbar>.back-to-roles{min-width:0;flex:1 1 180px}
+      .topbar>#newNoteBtn,.topbar>#downloadBtn{flex:1 1 140px}
+    }
+    @media(max-width:700px){
+      .topbar>.back-to-roles{flex:1 1 100%;width:100%}
+      .topbar>#newNoteBtn,.topbar>#downloadBtn{flex:1 1 calc(50% - 5px)}
+      .viewer-toolbar{flex-wrap:wrap}
+      .viewer-toolbar #changePdfBtn{margin-left:0}
+      .stamp-actions{grid-template-columns:1fr 1fr}
+      .stamp-actions .btn{font-size:12px}
+    }
+
+    /* Revisão: navegação principal à esquerda e formulário mais direto. */
+    .topbar-spacer{flex:1 1 auto;min-width:10px}
+    .topbar>.back-to-roles{margin-right:0;min-width:170px}
+    .empty-state>.empty-content{max-width:none}
+    .empty-state>div{max-width:none}
+    .empty-upload{margin-top:0;min-width:180px}
+    .inline-clear-actions{display:flex;justify-content:flex-end;margin-top:13px}
+    #financePanel .signature-row{
+      grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+    }
+    #financePanel .signature-row .signature-status{
+      grid-column:1/-1;display:block;min-width:0;
+      white-space:normal;overflow-wrap:anywhere;line-height:1.3;
+      padding:6px 8px;border:1px solid #dce3eb;border-radius:8px;
+      background:#f7f9fb;
+    }
+    #financePanel .signature-row .btn{width:100%;min-width:0}
+    @media(max-width:1020px){
+      .topbar-spacer{display:none}
+      .topbar>.back-to-roles{margin-right:auto}
+    }
+    @media(max-width:700px){
+      .topbar>.back-to-roles{margin-right:0}
+    }
+
+    /* Leitor de PDF contínuo, com separação clara entre páginas e navegação lateral. */
+    .viewer-card{overflow:visible!important}
+    /* O formulário acompanha a leitura: clicar em Adicionar não muda de página. */
+    @media(min-width:1021px){.panel-card{position:sticky;top:74px}}
+    .document-area{overflow:visible!important;min-height:calc(100vh - 175px)}
+    .pages-stack{display:flex;flex-direction:column;align-items:center;gap:28px;min-height:0}
+    .pages-stack .page-shell{flex:0 0 auto;max-width:100%;border:1px solid #cbd3dc;background:#fff;scroll-margin-top:88px}
+    .pdf-page-canvas{display:block;max-width:100%}
+    .pdf-nav-rail{position:sticky;top:calc(50vh - 95px);height:0;z-index:29;pointer-events:none;align-self:stretch}
+    .pdf-nav-controls{pointer-events:auto;width:48px;margin-left:auto;margin-right:9px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;background:#fff;border:1px solid #d5dce5;border-radius:10px;box-shadow:0 3px 15px rgba(10,30,50,.14)}
+    .pdf-nav-controls #pageNumberInput{width:35px;max-width:35px;height:32px;text-align:center;padding:4px 2px;font-size:13px;border-radius:6px;border:1px solid #c5cbd4;appearance:textfield;-moz-appearance:textfield}
+    #pageNumberInput::-webkit-outer-spin-button,#pageNumberInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .page-total{font-size:12px;font-weight:600;color:#516071;white-space:nowrap}
+    .size-buttons .size-btn.active:disabled{opacity:1;background:#eef3ff;border-color:#2856d8;color:#2349bd;box-shadow:inset 0 0 0 1px #2856d8;cursor:default}
+    .admin-size-message{font-size:12px;color:var(--muted);line-height:1.5;margin:9px 0 12px}
+    .admin-size-message.warning{color:#a04417}
+    .nav-arrow{height:29px;width:35px;display:grid;place-items:center;background:transparent;border-radius:6px;color:#354357;font-weight:800;font-size:24px;line-height:1;cursor:pointer}
+    .nav-arrow:hover:not(:disabled){background:#eaf0f8}
+    .nav-arrow:disabled{opacity:.3;cursor:not-allowed}
+    .signature-row,#financePanel .signature-row,#adminPanel .signature-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center}
+    .signature-status,#financePanel .signature-row .signature-status,#adminPanel .signature-row .signature-status{grid-column:auto;min-width:0;min-height:46px;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:normal;padding:5px 9px;border:1px solid #dce3eb;border-radius:8px;background:#f7f9fb;font-size:12px;font-weight:600;color:#737d8b;text-align:center}
+    .signature-status.added,#adminPanel .signature-status.added{background:#fff;border-color:#c5d7e8}
+    .signature-preview{display:block;object-fit:contain;width:100%;max-width:170px;height:48px}
+    .signature-row .sign-trigger,#financePanel .signature-row .btn,#adminPanel .signature-row .btn{width:auto;max-width:170px;min-height:38px;font-size:12px;white-space:normal;line-height:1.25;padding:7px 10px}
+    @media(max-width:700px){.pdf-nav-controls{margin-right:4px}.pages-stack{gap:18px}.signature-row .sign-trigger{max-width:140px}}
+    .scale-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .scale-header .section-title{margin-bottom:8px}
+    .scale-value{font-weight:700;color:#092c56;font-size:14px;font-variant-numeric:tabular-nums}
+    .scale-row{display:flex;align-items:center;gap:10px}
+    .stamp-scale{display:block;flex:1;min-width:0;accent-color:#2856d8;cursor:pointer;padding:0;border:0;box-shadow:none!important}
+    .stamp-scale:disabled{opacity:.55;cursor:not-allowed}
+    .reset-scale{min-width:56px;white-space:nowrap}
+    .scale-hint{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+    /* v6: zoom visual independente da escala aplicada no PDF. */
+    .pdf-horizontal-viewport{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+    .pdf-horizontal-viewport .pages-stack{width:max-content;min-width:100%;max-width:none}
+    .pdf-horizontal-viewport .pages-stack .page-shell{max-width:none!important}
+    .pdf-horizontal-viewport .pdf-page-canvas{max-width:none!important}
+    .pdf-zoom-controls{position:fixed;bottom:19px;left:calc((100% - 406px)/2);transform:translateX(-50%);
+      display:flex;align-items:center;gap:5px;padding:6px;z-index:39;background:rgba(255,255,255,.97);
+      border:1px solid #d6deea;border-radius:11px;box-shadow:0 5px 22px rgba(14,39,72,.22)}
+    .zoom-control-btn{border-radius:7px;width:33px;height:33px;background:#f2f6fa;color:#143e68;font-weight:700;
+      font-size:21px;line-height:1;cursor:pointer}
+    .zoom-control-btn:hover:not(:disabled),.zoom-fit-btn:hover:not(:disabled){background:#e7eef8}
+    .pdf-zoom-controls button:disabled{opacity:.38;cursor:not-allowed}
+    .pdf-zoom-value{min-width:49px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums;font-weight:700;color:#17212d}
+    .zoom-fit-btn{padding:8px 10px;border-left:1px solid #d6deea;border-radius:7px;background:#fff;color:#143e68;
+      white-space:nowrap;font-size:12px;font-weight:600;cursor:pointer}
+    @media(max-width:1020px){.pdf-zoom-controls{left:50%}}
+    @media(max-width:700px){.pdf-zoom-controls{bottom:10px}.zoom-fit-btn{font-size:11px}}
+
+
+    /* V14b: tela inicial em dois blocos, com fila local de testes. */
+    .role-screen{overflow-y:auto;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .role-box{width:min(1150px,100%);padding:28px 30px;max-height:none;overflow:visible}
+    .role-box::after{opacity:.55}
+    .home-columns{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:28px;align-items:stretch}
+    .home-stage,.home-queue{min-width:0;position:relative}
+    .home-queue{border-left:1px solid #e3e8f0;padding-left:28px}
+    .home-section-heading{margin-bottom:20px;min-height:57px}
+    .home-section-heading h1,.home-section-heading h2{font-size:22px;line-height:1.22;margin:0 0 7px;color:#17212d;letter-spacing:-.027em}
+    .home-section-heading p{font-size:12px;line-height:1.4;color:#77818f;margin:0}
+    .role-box .role-grid{display:grid;grid-template-columns:1fr;gap:11px}
+    .role-box .role-grid .role-card{min-height:100px;padding:16px 15px 16px 17px;display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto;column-gap:14px;row-gap:4px;align-content:center}
+    .role-box .role-grid .role-card-top{grid-column:1;grid-row:1/3;margin:0;align-self:center}
+    .role-box .role-grid .role-card strong{grid-column:2;grid-row:1;margin:0;font-size:15px}
+    .role-box .role-grid .role-card>span{grid-column:2;grid-row:2;font-size:11.5px;line-height:1.4}
+    .home-queue-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .queue-count{display:grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:9px;background:#edf3fb;color:#174f84;font-size:13px;font-weight:800}
+    .queue-tabs{display:flex;gap:5px;padding:4px;background:#f2f5f9;border:1px solid #e2e7ef;border-radius:10px;margin-bottom:13px}
+    .queue-tab{flex:1;padding:9px 10px;background:transparent;border:0;border-radius:7px;color:#697586;font-size:12px;font-weight:700;cursor:pointer}
+    .queue-tab.is-active{background:#fff;color:#143e68;box-shadow:0 2px 8px rgba(9,44,86,.09)}
+    .queue-items{display:flex;flex-direction:column;gap:9px;min-height:212px}
+    .queue-item{width:100%;display:grid;grid-template-columns:41px minmax(0,1fr) 12px;align-items:center;gap:12px;text-align:left;padding:14px 13px;border:1px solid #e0e6ef;background:#fff;border-radius:11px;cursor:pointer;color:#263341;transition:background .14s,border-color .14s,box-shadow .14s}
+    .queue-item:hover{background:#f9fbff;border-color:#bdcde4;box-shadow:0 4px 15px rgba(9,44,86,.08)}
+    .queue-item-icon{display:grid;place-items:center;width:41px;height:45px;border-radius:8px;background:#f0f4f9;border:1px solid #e1e8f2;color:#476484;font-size:10px;font-weight:800;letter-spacing:.05em}
+    .queue-item-main{display:flex;flex-direction:column;min-width:0;gap:9px}
+    .queue-item-main strong{font-size:13px;font-weight:700;line-height:1.25;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+    .queue-item-sub{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .status-pill{padding:5px 7px;border-radius:6px;font-size:10px;font-weight:700;line-height:1;white-space:nowrap}
+    .status-atesto{background:#eef4fb;color:#174f84}
+    .status-diretoria{background:#fff3e8;color:#af621b}
+    .status-concluido{background:#edf8f1;color:#24774a}
+    .queue-origin{font-size:10px;color:#85909e}
+    .queue-chevron{font-size:26px;color:#9ca7b5;font-weight:300}
+    .queue-empty{min-height:208px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;border:1px dashed #d6dfeb;border-radius:11px;color:#798593;font-size:12px;line-height:1.5}
+    .queue-empty strong{color:#465467;margin-bottom:5px;font-size:13px}
+    .queue-footer{margin-top:15px;padding-top:13px;border-top:1px solid #e3e9f1;font-size:11px;line-height:1.55;color:#7c8795}
+    @media(max-width:850px){
+      .role-screen{align-items:flex-start}
+      .role-box{margin:auto;padding:22px}
+      .home-columns{grid-template-columns:1fr;gap:23px}
+      .home-queue{padding-left:0;padding-top:22px;border-left:none;border-top:1px solid #e3e8f0}
+      .home-section-heading{min-height:0;margin-bottom:15px}
+      .role-box .role-grid .role-card{min-height:90px}
+      .queue-items{min-height:0}
+    }
+    @media(max-width:420px){.role-screen{padding:12px}.role-box{padding:18px}.queue-item{grid-template-columns:35px minmax(0,1fr) 8px;gap:9px;padding:12px 9px}.queue-item-icon{width:35px;height:39px}.queue-item-main strong{font-size:12px}}
+
+
+    /* Supabase: autenticacao e acesso por setor */
+    .auth-screen{
+      position:fixed;inset:0;z-index:220;display:grid;place-items:center;padding:22px;
+      background:linear-gradient(180deg,#f7f9fc 0%,#edf2f7 100%);
+    }
+    .auth-card{
+      width:min(430px,100%);background:#fff;border:1px solid #dbe4ef;border-radius:18px;
+      box-shadow:0 20px 70px rgba(9,44,86,.15);padding:28px;
+    }
+    .auth-brand{font-size:11px;font-weight:900;letter-spacing:.11em;color:#092c56;margin-bottom:18px}
+    .auth-brand span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;color:#758294;margin-top:3px}
+    .auth-card h1{margin:0 0 7px;font-size:23px;color:#17212d}
+    .auth-card>p{margin:0 0 20px;color:#687080;font-size:13px;line-height:1.5}
+    .auth-fields{display:grid;gap:12px}
+    .auth-actions{display:flex;gap:8px;margin-top:16px}
+    .auth-actions .btn{flex:1;padding:10px 12px;font-weight:700}
+    .auth-message{min-height:18px;margin-top:12px;font-size:12px;line-height:1.45;color:#687080}
+    .auth-message.error{color:#b42318}.auth-message.success{color:#18864b}
+    .user-strip{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .user-strip-text{font-size:11px;color:#687080;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .logout-btn{padding:7px 9px!important;width:auto!important;flex:0 0 auto!important}
+    .role-card[disabled]{opacity:.48;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .role-card.is-current{border-color:#9db4d0;box-shadow:0 0 0 2px rgba(9,44,86,.08)}
+    @media(max-width:700px){.auth-card{padding:22px}.user-strip{width:100%;justify-content:flex-end}.user-strip-text{max-width:180px}}
+
+    /* v15: acesso compartilhado, fila com lixeira, zoom e acoes independentes */
+    .password-field{position:relative;display:flex;align-items:center}
+    .password-field input{width:100%;padding-right:77px}
+    .password-field button{position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:7px 8px;border:0;border-radius:6px;background:#eff4fa;color:#174f84;font-size:12px;font-weight:700;cursor:pointer}
+    .remember-row{display:flex;align-items:center;gap:8px;color:#455569;font-size:12px;cursor:pointer;line-height:1.4}
+    .remember-row input{width:16px;height:16px;accent-color:#174f84;flex:none}
+    .password-hint{font-size:12px;color:#627183}
+    .password-hint summary{width:max-content;cursor:pointer;color:#174f84;font-weight:600}
+    .password-hint p{margin:7px 0 0;line-height:1.5}
+    .role-box .role-grid .role-card .role-icon{display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;line-height:1!important;margin:0!important}
+    .queue-tabs{gap:4px}
+    .queue-tab{padding:9px 6px;min-width:0}
+    .queue-head-actions{display:flex;align-items:center;gap:8px}
+    .queue-clear-filter{border:0;padding:6px 8px;background:#e9f1fa;border-radius:6px;color:#184d81;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .queue-clear-filter.hidden{display:none}
+    .queue-row{position:relative;min-width:0}
+    .queue-item{padding-right:48px}
+    .queue-item-main{gap:5px}
+    .queue-item-time{font-size:10.5px;color:#718096;line-height:1.35}
+    .queue-item.is-trashed{background:#fafbfd;color:#536273;cursor:default}
+    .queue-item.is-trashed:hover{box-shadow:none;border-color:#e0e6ef}
+    .queue-more{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:2;display:grid;place-items:center;width:30px;height:31px;border:1px solid transparent;background:transparent;border-radius:8px;font-size:22px;line-height:1;color:#748398;cursor:pointer}
+    .queue-more:hover,.queue-more[aria-expanded="true"]{background:#ebf1f8;border-color:#d7e3f1;color:#174f84}
+    .queue-menu-panel{position:absolute;right:9px;top:calc(50% + 18px);z-index:15;display:flex;flex-direction:column;min-width:176px;gap:4px;border:1px solid #dbe4ed;border-radius:10px;background:white;padding:6px;box-shadow:0 12px 30px rgba(20,39,67,.17)}
+    .queue-menu-panel.hidden{display:none}
+    .queue-menu-panel button{border:0;border-radius:7px;padding:10px 11px;text-align:left;background:transparent;color:#35465b;font-size:12px;font-weight:600;cursor:pointer}
+    .queue-menu-panel button:hover{background:#eef3f9}
+    .queue-menu-panel button.danger{color:#b42318}
+    .queue-history-dialog .history-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+    .queue-history-dialog .history-list li{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:0 0 10px;border-bottom:1px solid #e9eef5;font-size:12px}
+    .queue-history-dialog .history-list strong{color:#203248}
+    .queue-history-dialog .history-list span{color:#627183;text-align:right}
+    .queue-history-dialog .history-explainer{font-size:11px;line-height:1.5;color:#6b7585;margin:13px 0 0}
+    .status-trashed{background:#f0f2f5;color:#64748b}
+    .pdf-zoom-controls{max-width:calc(100vw - 20px);flex-wrap:wrap;justify-content:center}
+    .zoom-fit-btn[aria-pressed="true"]{background:#e4edf9;color:#114779;border-color:#b3c7e4}
+    @media(max-width:1020px){.topbar>#saveBtn{flex:1 1 140px}}
+    @media(max-width:700px){.topbar>#saveBtn{flex:1 1 calc(50% - 5px)}.pdf-zoom-controls{width:max-content;max-width:calc(100vw - 20px)}.zoom-fit-btn{font-size:10px;padding:8px 5px}.queue-more{right:7px}}
+
+  </style>
+</head>
+
+<body>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">ITAÚBA <span>INCORPORAÇÕES E CONSTRUÇÕES</span></div>
+      <h1>Entrar no Carimbo Digital</h1>
+      <p>Acesse com a conta compartilhada da equipe para continuar o fluxo de documentos.</p>
+      <div class="auth-fields">
+        <div class="field"><label for="loginEmail">Usuário ou e-mail</label><input id="loginEmail" type="text" autocomplete="username" placeholder="E-mail no primeiro acesso ou adm-itauba"></div>
+        <div class="field"><label for="loginPassword">Senha</label>
+          <div class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha"><button id="togglePasswordBtn" type="button" aria-pressed="false" aria-controls="loginPassword">Exibir</button></div>
+        </div>
+        <label class="remember-row"><input id="rememberSession" type="checkbox"> Permanecer conectado neste dispositivo</label>
+        <details class="password-hint"><summary>Dica de senha</summary><p>Utilize a senha fornecida pela administração. Por segurança, a senha não é exibida na dica.</p></details>
+      </div>
+      <div class="auth-actions"><button id="loginBtn" class="btn primary" type="button">Entrar</button></div>
+      <div id="authMessage" class="auth-message" role="status"></div>
+    </div>
+  </section>
+
+  <section id="roleScreen" class="role-screen">
+    <div class="role-box">
+      <div class="role-brand">ITAÚBA <span>INCORPORAÇÕES E CONSTRUÇÕES</span></div>
+      <div class="home-columns">
+        <section class="home-stage" aria-labelledby="stageHeading">
+          <div class="home-section-heading">
+            <h1 id="stageHeading">Escolha uma etapa</h1>
+            <p id="stageHelper">Selecione a etapa ou abra uma nota fiscal da fila.</p>
+          </div>
+          <div class="role-grid">
+        <button class="role-card role-finance" type="button" data-role="financeiro">
+          <div class="role-card-top"><span class="role-icon">01</span></div>
+          <strong>Financeiro</strong>
+          <span>Preencha os dados da nota, inclua o Visto e aplique o primeiro carimbo no PDF.</span>
+        </button>
+
+        <button class="role-card role-admin" type="button" data-role="administracao">
+          <div class="role-card-top"><span class="role-icon">02</span></div>
+          <strong>Administração</strong>
+          <span>Abra o PDF recebido do Financeiro e complete somente o Atesto e a data.</span>
+        </button>
+
+        <button class="role-card directoria role-director" type="button" data-role="diretoria">
+          <div class="role-card-top"><span class="role-icon">03</span></div>
+          <strong>Diretoria</strong>
+          <span>Abra o PDF já vistado e atestado e aplique a conferência exclusiva da Diretoria.</span>
+        </button>
+          </div>
+        </section>
+        <section class="home-queue" aria-labelledby="queueHeading">
+          <div class="home-section-heading home-queue-heading">
+            <div><h2 id="queueHeading">Fila de documentos</h2><p id="queueSubtitle">Documentos aguardando a próxima etapa.</p></div>
+            <div class="queue-head-actions"><button id="clearQueueFilter" type="button" class="queue-clear-filter hidden">Ver todos</button><span class="queue-count" id="queueCount">0</span></div>
+          </div>
+          <div class="queue-tabs" role="group" aria-label="Visualização de documentos">
+            <button class="queue-tab is-active" type="button" data-queue-tab="andamento" aria-pressed="true">Em andamento</button>
+            <button class="queue-tab" type="button" data-queue-tab="concluidos" aria-pressed="false">Concluídos</button>
+            <button class="queue-tab" type="button" data-queue-tab="lixeira" aria-pressed="false">Lixeira</button>
+          </div>
+          <div class="queue-items" id="queueItems" aria-live="polite">
+            <div class="queue-empty"><strong>Carregando documentos...</strong><span>Aguarde a sincronização.</span></div>
+          </div>
+          <div class="queue-footer" id="queueFooter">Documentos sincronizados com a biblioteca privada da empresa.</div>
+        </section>
+      </div>
+
+    </div>
+  </section>
+
+  <header class="topbar">
+    <button id="backToRolesBtn" class="btn back-to-roles" type="button">← Fila de documentos</button>
+    <div class="topbar-spacer" aria-hidden="true"></div>
+    <button id="newNoteBtn" class="btn" type="button" disabled>Nova nota</button>
+    <button id="saveBtn" class="btn primary" type="button" disabled>Salvar etapa</button>
+    <button id="downloadBtn" class="btn" type="button" disabled>Baixar PDF</button>
+    <div class="user-strip"><span id="currentUserText" class="user-strip-text"></span><button id="logoutBtn" class="btn compact logout-btn" type="button">Sair</button></div>
+  </header>
+
+  <main class="layout">
+    <section class="viewer-card">
+      <div class="viewer-toolbar">
+        <button id="changePdfBtn" class="btn compact hidden" type="button">Trocar PDF</button>
+        <span class="spacer"></span>
+        <span id="notice" class="notice">PDF gerado.</span>
+        <span id="pageInfo" class="page-info">Nenhum PDF carregado</span>
+      </div>
+
+      <div id="pageNavRail" class="pdf-nav-rail hidden" aria-label="Navegação entre páginas do PDF">
+        <div class="pdf-nav-controls">
+          <input id="pageNumberInput" type="number" min="1" step="1" aria-label="Ir para página" value="1" inputmode="numeric">
+          <span id="pageTotal" class="page-total" aria-label="Total de páginas">1</span>
+          <button id="prevPageBtn" class="nav-arrow" type="button" aria-label="Página anterior" title="Página anterior" disabled>⌃</button>
+          <button id="nextPageBtn" class="nav-arrow" type="button" aria-label="Próxima página" title="Próxima página" disabled>⌄</button>
+        </div>
+      </div>
+      <div id="documentArea" class="document-area">
+        <div id="pdfHorizontalViewport" class="pdf-horizontal-viewport">
+        <div id="pagesStack" class="pages-stack">
+        <div id="pageShell" class="page-shell">
+          <canvas id="pdfCanvas"></canvas>
+
+          <div id="overlay" class="hidden" data-mode="financeiro">
+            <svg id="activeSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+        </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <div>
+            <button id="uploadPdfBtn" class="btn primary empty-upload" type="button">Enviar PDF</button>
+            <input id="pdfInput" class="file-input" type="file" accept="application/pdf">
+          </div>
+        </div>
+      </div>
+      <div id="pdfZoomControls" class="pdf-zoom-controls hidden" role="group" aria-label="Zoom do PDF">
+        <button id="zoomOutBtn" type="button" class="zoom-control-btn" aria-label="Diminuir zoom" title="Diminuir zoom">−</button>
+        <output id="pdfZoomValue" class="pdf-zoom-value" aria-live="polite">100%</output>
+        <button id="zoomInBtn" type="button" class="zoom-control-btn" aria-label="Aumentar zoom" title="Aumentar zoom">+</button>
+        <button id="zoomFitPageBtn" type="button" class="zoom-fit-btn" title="Exibir a página inteira">Ajustar à página</button>
+        <button id="zoomFitBtn" type="button" class="zoom-fit-btn" title="Ajustar PDF à largura disponível">Ajustar à largura</button>
+      </div>
+    </section>
+
+    <aside id="panelCard" class="panel-card">
+      <div id="panelPlaceholder">
+        <h2>Etapa do processo</h2>
+        <p class="helper">Escolha Financeiro, Administração ou Diretoria para carregar os controles correspondentes.</p>
+      </div>
+
+      <div id="financePanel" class="hidden">
+
+        <h2>Dados do carimbo</h2>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="fData">Data</label><input id="fData" type="date"></div>
+            <div class="field">
+              <div class="label-row"><label for="fObra">Obra</label><span id="fObraCount" class="char-counter">0/42</span></div>
+              <input id="fObra" maxlength="42" placeholder="Ex.: Residencial Jardim das Araucárias">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fRecebido">Recebido</label><span id="fRecebidoCount" class="char-counter">0/54</span></div>
+              <input id="fRecebido" maxlength="54" placeholder="Ex.: Setor Administrativo">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fDescricao">Descrição</label><span id="fDescricaoCount" class="char-counter">0/115</span></div>
+              <textarea id="fDescricao" maxlength="115" placeholder="Descreva o serviço ou fornecimento."></textarea>
+            </div>
+
+            <div class="field">
+              <div class="label-row"><label for="fCT">CT</label><span id="fCTCount" class="char-counter">0/16</span></div>
+              <input id="fCT" maxlength="16" placeholder="CT-2026-0148">
+            </div>
+
+            <div class="field">
+              <div class="label-row"><label for="fPedido">Pedido</label><span id="fPedidoCount" class="char-counter">0/16</span></div>
+              <input id="fPedido" maxlength="16" placeholder="PED-008752">
+            </div>
+
+            <div class="field full">
+              <div class="label-row"><label for="fTitulo">Título</label><span id="fTituloCount" class="char-counter">0/20</span></div>
+              <input id="fTitulo" maxlength="20" placeholder="Medição 07/2026">
+            </div>
+          </div>
+          <div class="inline-clear-actions"><button class="btn danger clear-form" type="button">Limpar formulário</button></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Visto</div>
+          <div class="grid">
+            <div class="field"><label for="fVistoData">Data do Visto</label><input id="fVistoData" type="date"></div>
+            <div class="field full">
+              <label>Assinatura</label>
+              <div class="signature-row">
+                <div id="financeSignatureStatus" class="signature-status"><span class="signature-empty">Nenhuma assinatura</span><img class="signature-preview hidden" alt="Miniatura da assinatura"></div>
+                <button class="btn compact sign-trigger" data-sign-target="financeiro" type="button">Enviar assinatura</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="scale-header"><div class="section-title">Escala do carimbo</div><output class="scale-value" aria-live="off">100%</output></div>
+          <div class="scale-row">
+            <input class="stamp-scale" type="range" min="50" max="150" step="5" value="100" aria-label="Escala do carimbo em porcentagem" disabled>
+            <button class="btn compact reset-scale" type="button" disabled title="Restaurar escala padrão">100%</button>
+          </div>
+          <p class="scale-hint">De 50% a 150%, em intervalos de 5%. Pode ajustar mesmo após adicionar o carimbo.</p>
+        </div>
+
+
+      </div>
+
+      <div id="adminPanel" class="hidden">
+
+        <h2>Atesto da Administração</h2>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field"><label for="aData">Data do Atesto</label><input id="aData" type="date"></div>
+            <div class="field full">
+              <label>Assinatura do Atesto</label>
+              <div class="signature-row">
+                <div id="adminSignatureStatus" class="signature-status"><span class="signature-empty">Nenhuma assinatura</span><img class="signature-preview hidden" alt="Miniatura da assinatura"></div>
+                <button class="btn compact sign-trigger" data-sign-target="administracao" type="button">Enviar assinatura</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="scale-header"><div class="section-title">Escala do Atesto</div><output class="scale-value" aria-live="off">100%</output></div>
+          <div class="scale-row">
+            <input class="stamp-scale" type="range" min="50" max="150" step="5" value="100" aria-label="Escala do Atesto em porcentagem" disabled>
+            <button class="btn compact reset-scale" type="button" disabled title="Restaurar escala padrão">100%</button>
+          </div>
+          <p id="adminSizeMessage" class="admin-size-message" role="status">Ao enviar o PDF, tentaremos recuperar a escala do Financeiro.</p>
+          <div class="admin-tip">Com medidas recuperadas, a escala é herdada e bloqueada. Sem medidas, ajuste a escala e arraste o Atesto até a linha correta.</div>
+        </div>
+      </div>
+
+      <div id="directorPanel" class="hidden director-panel">
+
+        <h2>Conferência da Diretoria</h2>
+
+        <div class="section">
+          <div class="grid">
+            <div class="field full">
+              <div class="label-row"><label for="dObs">Observações</label><span id="dObsCount" class="char-counter">0/140</span></div>
+              <textarea id="dObs" maxlength="140" placeholder="Ex.: Conferido. Liberado para pagamento."></textarea>
+            </div>
+            <div class="field"><label for="dData">Data</label><input id="dData" type="date"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Assinatura da Diretoria</div>
+          <div class="signature-row">
+            <div id="directorSignatureStatus" class="signature-status"><span class="signature-empty">Nenhuma assinatura</span><img class="signature-preview hidden" alt="Miniatura da assinatura"></div>
+            <button class="btn compact sign-trigger" data-sign-target="diretoria" type="button">Enviar assinatura</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="scale-header"><div class="section-title">Escala do carimbo</div><output class="scale-value" aria-live="off">100%</output></div>
+          <div class="scale-row">
+            <input class="stamp-scale" type="range" min="50" max="150" step="5" value="100" aria-label="Escala do carimbo em porcentagem" disabled>
+            <button class="btn compact reset-scale" type="button" disabled title="Restaurar escala padrão">100%</button>
+          </div>
+          <p class="scale-hint">De 50% a 150%, em intervalos de 5%. Pode ajustar mesmo após adicionar o carimbo.</p>
+        </div>
+
+
+        <div class="section"><div class="panel-actions"><button class="btn danger clear-form" type="button">Limpar dados</button></div></div>
+      </div>
+
+      <div class="stamp-actions" aria-label="Ações do carimbo">
+        <button id="addOverlayBtn" class="btn success" type="button" disabled>Adicionar carimbo</button>
+        <button id="removeOverlayBtn" class="btn danger" type="button" disabled>Remover carimbo</button>
+      </div>
+    </aside>
+  </main>
+
+  <dialog id="signatureDialog">
+    <div class="dialog-head">
+      <strong id="signatureDialogTitle">Assinatura</strong>
+      <button id="closeSignatureDialog" class="btn compact" type="button">Fechar</button>
+    </div>
+    <div class="dialog-body">
+      <canvas id="signatureCanvas" width="1000" height="440"></canvas>
+      <div class="upload-row">
+        <button id="clearPadBtn" class="btn compact" type="button">Limpar desenho</button>
+        <label class="btn compact" for="signatureFile">Enviar PNG/JPG</label>
+        <input id="signatureFile" class="file-input" type="file" accept="image/png,image/jpeg">
+        <span class="signature-status">Desenhe com o mouse/dedo ou envie uma imagem.</span>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button id="cancelSignatureBtn" class="btn" type="button">Cancelar</button>
+      <button id="saveSignatureBtn" class="btn primary" type="button">Usar assinatura</button>
+    </div>
+  </dialog>
+
+  <dialog id="documentHistoryDialog" class="queue-history-dialog" aria-labelledby="documentHistoryTitle">
+    <div class="dialog-head"><strong id="documentHistoryTitle">Histórico do documento</strong><button id="closeHistoryBtn" type="button" class="btn compact">Fechar</button></div>
+    <div id="documentHistoryBody" class="dialog-body"></div>
+  </dialog>
+
+  <script type="module">
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+    const { PDFDocument } = PDFLib;
+    const $ = (id) => document.getElementById(id);
+    const measureCanvas = document.createElement("canvas");
+    const measureCtx = measureCanvas.getContext("2d");
+
+    const SUPABASE_URL = "https://pxsaphnwbfkhesuaqbbp.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_RD-NA_h-buY1cPTF4yGIow_6hb1pgrT";
+    // Primeiro login em cada navegador: usar o e-mail cadastrado no Supabase.
+    // Depois o apelido funciona localmente, sem e-mail no codigo publico.
+    const SHARED_LOGIN_ALIAS = 'adm-itauba';
+    const ALIAS_EMAIL_KEY = 'carimbo-v15-alias-email-pxsaphnwbfkhesuaqbbp';
+    const REMEMBER_KEY = 'carimbo-v15-permanecer-conectado';
+    const rememberAtStart = window.localStorage.getItem(REMEMBER_KEY)==='1';
+    let keepSignedIn = rememberAtStart;
+    const authStorage={
+      getItem:key=>(keepSignedIn?window.localStorage:window.sessionStorage).getItem(key),
+      setItem:(key,value)=>(keepSignedIn?window.localStorage:window.sessionStorage).setItem(key,value),
+      removeItem:key=>{window.localStorage.removeItem(key);window.sessionStorage.removeItem(key)}
+    };
+    // Limpeza do token local da v14b quando a sessao persistente nao e desejada.
+    if(!rememberAtStart)window.localStorage.removeItem('sb-pxsaphnwbfkhesuaqbbp-auth-token');
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{
+      auth:{storage:authStorage,persistSession:true,autoRefreshToken:true}
+    });
+
+    const state = {
+      role: null,
+      user: null,
+      profile: null,
+      activeQueueId: null,
+      queueReadOnly: false,
+      queueOriginalName: null,
+      savedPdfBytes:null,
+      savedPdfName:null,
+      saveBusy:false,
+      pdfFitMode:'page',
+      pdfBytes: null,
+      pdfDoc: null,
+      pdfName: "documento.pdf",
+      currentPage: 1,
+      pageCount: 0,
+      renderScale: 1.35,
+      pdfZoom: 100,
+      overlayVisible: false,
+      overlayPage: 1,
+      stampScale: 100,
+      financeStamp: null,
+      signatures: { financeiro:"", administracao:"", diretoria:"" },
+      signingTarget: null,
+      drawing: false,
+      lastPoint: null,
+      pageNodes: new Map(),
+      renderGeneration: 0,
+      pageObserver: null
+    };
+
+    const els = {
+      authScreen:$("authScreen"),
+      loginEmail:$("loginEmail"),
+      loginPassword:$("loginPassword"),
+      loginBtn:$("loginBtn"),
+      togglePasswordBtn:$("togglePasswordBtn"),
+      rememberSession:$("rememberSession"),
+      saveBtn:$("saveBtn"),
+      authMessage:$("authMessage"),
+      currentUserText:$("currentUserText"),
+      logoutBtn:$("logoutBtn"),
+      roleScreen:$("roleScreen"),
+      pdfInput:$("pdfInput"),
+      uploadPdfBtn:$("uploadPdfBtn"),
+      changePdfBtn:$("changePdfBtn"),
+      backToRolesBtn:$("backToRolesBtn"),
+      canvas:$("pdfCanvas"),
+      pageShell:$("pageShell"),
+      pagesStack:$("pagesStack"),
+      documentArea:$("documentArea"),
+      pdfHorizontalViewport:$("pdfHorizontalViewport"),
+      pdfZoomControls:$("pdfZoomControls"),
+      pdfZoomValue:$("pdfZoomValue"),
+      zoomInBtn:$("zoomInBtn"),
+      zoomOutBtn:$("zoomOutBtn"),
+      zoomFitBtn:$("zoomFitBtn"),
+      zoomFitPageBtn:$("zoomFitPageBtn"),
+      pageNavRail:$("pageNavRail"),
+      pageNumberInput:$("pageNumberInput"),
+      pageTotal:$("pageTotal"),
+      adminSizeMessage:$("adminSizeMessage"),
+      emptyState:$("emptyState"),
+      overlay:$("overlay"),
+      activeSvg:$("activeSvg"),
+      addOverlayBtn:$("addOverlayBtn"),
+      removeOverlayBtn:$("removeOverlayBtn"),
+      downloadBtn:$("downloadBtn"),
+      newNoteBtn:$("newNoteBtn"),
+      prevPageBtn:$("prevPageBtn"),
+      nextPageBtn:$("nextPageBtn"),
+      pageInfo:$("pageInfo"),
+      notice:$("notice"),
+      financePanel:$("financePanel"),
+      adminPanel:$("adminPanel"),
+      directorPanel:$("directorPanel"),
+      panelPlaceholder:$("panelPlaceholder"),
+      dialog:$("signatureDialog"),
+      sigCanvas:$("signatureCanvas"),
+      sigFile:$("signatureFile"),
+      sigTitle:$("signatureDialogTitle")
+    };
+
+    const roleMeta = {
+      financeiro:{
+        label:"Financeiro",
+        subtitle:"Preencha os dados, inclua o Visto e aplique o primeiro carimbo.",
+        addLabel:"Adicionar carimbo",
+        removeLabel:"Remover carimbo",
+        emptyTitle:"Envie a nota original em PDF",
+        emptyText:"O Financeiro aplica o primeiro carimbo e deixa a linha de Atesto reservada.",
+        suffix:"_visto.pdf"
+      },
+      administracao:{
+        label:"Administração",
+        subtitle:"Complete o Atesto no PDF já carimbado pelo Financeiro.",
+        addLabel:"Adicionar atesto",
+        removeLabel:"Remover atesto",
+        emptyTitle:"Envie o PDF recebido do Financeiro",
+        emptyText:"Depois, adicione a assinatura e a data sobre a linha ATESTO do carimbo existente.",
+        suffix:"_atestado.pdf"
+      },
+      diretoria:{
+        label:"Diretoria",
+        subtitle:"Aplique a conferência final da Diretoria em vermelho.",
+        addLabel:"Adicionar conferência",
+        removeLabel:"Remover conferência",
+        emptyTitle:"Envie o PDF já vistado e atestado",
+        emptyText:"A Diretoria adiciona uma conferência independente, em vermelho.",
+        suffix:"_diretoria.pdf"
+      }
+    };
+
+
+    // Fila online: documentos e PDFs ficam no Supabase.
+    const QUEUE_STATUS={
+      aguardando_atesto:{label:'Aguardando Administração',role:'administracao',css:'status-atesto'},
+      aguardando_diretoria:{label:'Aguardando Diretoria',role:'diretoria',css:'status-diretoria'},
+      concluido:{label:'Concluído',role:null,css:'status-concluido'}
+    };
+    let queueTab='andamento';
+    let queueRoleFilter=null;
+    let queueRecords=[];
+    let queueBusy=false;
+
+    function isFullAccess(){return state.profile?.acesso_total===true}
+
+    function statusItemsForCurrentRole(){
+      if(queueTab==='lixeira')return queueRecords.filter(x=>Boolean(x.deletedAt));
+      if(queueTab==='concluidos')return queueRecords.filter(x=>!x.deletedAt && x.status==='concluido');
+      const active=queueRecords.filter(x=>!x.deletedAt && x.status!=='concluido');
+      if(isFullAccess())return queueRoleFilter?active.filter(x=>QUEUE_STATUS[x.status]?.role===queueRoleFilter):active;
+      const role=state.profile?.role;
+      if(role==='administracao')return active.filter(x=>x.status==='aguardando_atesto');
+      if(role==='diretoria')return active.filter(x=>x.status==='aguardando_diretoria');
+      return active;
+    }
+
+    function formatTimestamp(value){
+      if(!value)return 'Ainda não realizada';
+      const date=new Date(value);
+      return Number.isNaN(date.getTime())?'Data indisponível':new Intl.DateTimeFormat('pt-BR',{
+        dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'
+      }).format(date).replace(', ',' às ');
+    }
+
+    function lastStepLabel(item){
+      if(item.status==='concluido')return ['Concluído em',item.diretoriaCompletedAt||item.updatedAt];
+      if(item.status==='aguardando_diretoria')return ['Administração',item.administracaoCompletedAt||item.updatedAt];
+      return ['Financeiro',item.financeiroCompletedAt||item.updatedAt];
+    }
+
+    async function queueReadAll(){
+      if(!state.user)return [];
+      const {data,error}=await supabaseClient
+        .from('documents')
+        .select('id,nome,original_name,status,current_file_path,created_at,updated_at,financeiro_completed_at,administracao_completed_at,diretoria_completed_at,deleted_at,deleted_by')
+        .order('updated_at',{ascending:false});
+      if(error)throw error;
+      return (data||[]).map(row=>({
+        id:row.id,
+        name:row.nome,
+        originalName:row.original_name,
+        status:row.status,
+        currentFilePath:row.current_file_path,
+        updatedAt:row.updated_at||row.created_at,
+        financeiroCompletedAt:row.financeiro_completed_at,
+        administracaoCompletedAt:row.administracao_completed_at,
+        diretoriaCompletedAt:row.diretoria_completed_at,
+        deletedAt:row.deleted_at,
+        deletedBy:row.deleted_by,
+        filename:(row.current_file_path||'').split('/').pop()||row.original_name
+      }));
+    }
+
+    function showHistory(item){
+      const dialog=$('documentHistoryDialog');
+      $('documentHistoryTitle').textContent=item.name;
+      const body=$('documentHistoryBody');body.replaceChildren();
+      const list=document.createElement('ul');list.className='history-list';
+      const rows=[
+        ['Financeiro',item.financeiroCompletedAt],
+        ['Administração',item.administracaoCompletedAt],
+        ['Diretoria',item.diretoriaCompletedAt]
+      ];
+      rows.forEach(([label,date])=>{
+        const li=document.createElement('li');
+        const title=document.createElement('strong');title.textContent=label;
+        const value=document.createElement('span');value.textContent=formatTimestamp(date);
+        li.append(title,value);list.append(li);
+      });
+      const note=document.createElement('p');note.className='history-explainer';
+      note.textContent='Os horários indicam quando cada etapa foi salva no sistema (horário de Brasília), não a identidade de quem assinou.';
+      body.append(list,note);dialog.showModal();
+    }
+    $('closeHistoryBtn').addEventListener('click',()=>$('documentHistoryDialog').close());
+    $('documentHistoryDialog').addEventListener('click',e=>{
+      if(e.target===$('documentHistoryDialog'))e.target.close();
+    });
+
+    function queueItemNode(item){
+      const trashed=Boolean(item.deletedAt);
+      const meta=trashed?{label:'Na lixeira',css:'status-trashed'}:(QUEUE_STATUS[item.status]||{label:item.status,css:''});
+      const row=document.createElement('div');row.className='queue-row';
+      const btn=document.createElement(trashed?'div':'button');
+      if(!trashed)btn.type='button';
+      btn.className='queue-item'+(trashed?' is-trashed':'');btn.dataset.queueId=item.id;
+      const icon=document.createElement('span');icon.className='queue-item-icon';icon.textContent='PDF';icon.setAttribute('aria-hidden','true');
+      const main=document.createElement('span');main.className='queue-item-main';
+      const name=document.createElement('strong');name.textContent=item.name;name.title=item.name;
+      const sub=document.createElement('span');sub.className='queue-item-sub';
+      const status=document.createElement('span');status.className='status-pill '+meta.css;status.textContent=meta.label;
+      sub.append(status);
+      const when=document.createElement('span');when.className='queue-item-time';
+      if(trashed)when.textContent=`Movido para a lixeira: ${formatTimestamp(item.deletedAt)}`;
+      else{const [label,date]=lastStepLabel(item);when.textContent=label==='Concluído em'?`${label} ${formatTimestamp(date)}`:`${label}: ${formatTimestamp(date)}`}
+      const chevron=document.createElement('span');chevron.className='queue-chevron';chevron.textContent=trashed?'':'›';chevron.setAttribute('aria-hidden','true');
+      main.append(name,sub,when);btn.append(icon,main,chevron);
+      if(!trashed)btn.addEventListener('click',()=>queueOpenItem(item));
+      row.append(btn);
+      const more=document.createElement('button');more.className='queue-more';more.type='button';
+      more.textContent='⋯';more.setAttribute('aria-label',`Opções de ${item.name}`);more.setAttribute('aria-expanded','false');
+      const menu=document.createElement('div');menu.className='queue-menu-panel hidden';
+      function addAction(label,callback,danger=false){
+        const action=document.createElement('button');action.type='button';action.textContent=label;
+        if(danger)action.className='danger';
+        action.addEventListener('click',async()=>{menu.classList.add('hidden');more.setAttribute('aria-expanded','false');await callback()});
+        menu.append(action);
+      }
+      if(trashed)addAction('Restaurar documento',()=>restoreDocument(item));
+      else if(item.status!=='concluido')addAction('Mover para a lixeira',()=>trashDocument(item),true);
+      addAction('Ver horários',()=>showHistory(item));
+      more.addEventListener('click',e=>{
+        e.stopPropagation();
+        document.querySelectorAll('.queue-menu-panel').forEach(m=>{if(m!==menu)m.classList.add('hidden')});
+        document.querySelectorAll('.queue-more').forEach(b=>{if(b!==more)b.setAttribute('aria-expanded','false')});
+        menu.classList.toggle('hidden');more.setAttribute('aria-expanded',String(!menu.classList.contains('hidden')));
+      });
+      row.append(more,menu);return row;
+    }
+    document.addEventListener('click',e=>{
+      if(e.target.closest('.queue-more,.queue-menu-panel'))return;
+      document.querySelectorAll('.queue-menu-panel').forEach(x=>x.classList.add('hidden'));
+      document.querySelectorAll('.queue-more').forEach(x=>x.setAttribute('aria-expanded','false'));
+    });
+
+    async function trashDocument(item){
+      if(!isFullAccess())return alert('Apenas a conta autorizada pode mover documentos para a lixeira.');
+      if(item.status==='concluido'||item.deletedAt)return;
+      if(!confirm(`Mover "${item.name}" para a lixeira? O PDF ficará armazenado e poderá ser restaurado.`))return;
+      try{
+        const {error}=await supabaseClient.rpc('trash_document_v15',{p_document_id:item.id});
+        if(error)throw error;
+        await queueRefresh();
+      }catch(error){console.error(error);alert('Não foi possível mover para a lixeira. Confirme se a migração SQL da v15 foi executada.')}
+    }
+    async function restoreDocument(item){
+      if(!isFullAccess())return alert('Apenas a conta autorizada pode restaurar documentos.');
+      if(!item.deletedAt)return;
+      try{
+        const {error}=await supabaseClient.rpc('restore_document_v15',{p_document_id:item.id});
+        if(error)throw error;
+        await queueRefresh();
+      }catch(error){console.error(error);alert('Não foi possível restaurar o documento. Verifique sua conexão.')}
+    }
+
+    function queueRender(){
+      const items=statusItemsForCurrentRole().sort((a,b)=>{
+        const aTime=a.deletedAt&&queueTab==='lixeira'?a.deletedAt:a.updatedAt;
+        const bTime=b.deletedAt&&queueTab==='lixeira'?b.deletedAt:b.updatedAt;
+        return new Date(bTime||0)-new Date(aTime||0);
+      });
+      $('queueCount').textContent=String(items.length);
+      $('clearQueueFilter').classList.toggle('hidden',!queueRoleFilter||queueTab!=='andamento');
+      $('queueSubtitle').textContent=queueRoleFilter&&queueTab==='andamento'
+        ? `Documentos aguardando ${roleMeta[queueRoleFilter].label}. Selecione uma nota para continuar.`
+        : queueTab==='concluidos'?'Biblioteca de documentos concluídos.':queueTab==='lixeira'?'Documentos recuperáveis, ainda não concluídos.':'Documentos aguardando a próxima etapa.';
+      const container=$('queueItems');container.replaceChildren();
+      if(!items.length){
+        const empty=document.createElement('div');empty.className='queue-empty';
+        const title=document.createElement('strong');title.textContent=queueTab==='concluidos'?'Nenhum documento concluído':queueTab==='lixeira'?'Lixeira vazia':'Nenhum documento em andamento';
+        const detail=document.createElement('span');detail.textContent=queueTab==='concluidos'?'A biblioteca de concluídos aparecerá aqui.':queueTab==='lixeira'?'Os documentos movidos para a lixeira poderão ser restaurados aqui.':'Quando houver documentos pendentes, eles aparecerão aqui.';
+        empty.append(title,detail);container.append(empty);
+      }else items.forEach(item=>container.append(queueItemNode(item)));
+      document.querySelectorAll('.queue-tab').forEach(b=>{
+        const active=b.dataset.queueTab===queueTab;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',String(active));
+      });
+    }
+
+    async function queueRefresh(){
+      if(!state.user){queueRecords=[];queueRender();return}
+      try{
+        queueRecords=await queueReadAll();
+        queueRender();
+      }catch(e){
+        console.error('Erro ao carregar fila do Supabase',e);
+        queueRecords=[];queueRender();
+        $('queueFooter').textContent='Não foi possível sincronizar a fila. Verifique sua conexão e tente novamente.';
+      }
+    }
+
+    document.querySelectorAll('.queue-tab').forEach(btn=>btn.addEventListener('click',()=>{
+      queueRoleFilter=null;queueTab=btn.dataset.queueTab;queueRender();
+    }));
+    $('clearQueueFilter').addEventListener('click',()=>{queueRoleFilter=null;queueRender()});
+
+    function showReadOnlyPanel(message){
+      els.financePanel.classList.add('hidden');
+      els.adminPanel.classList.add('hidden');
+      els.directorPanel.classList.add('hidden');
+      els.panelPlaceholder.replaceChildren();
+      const title=document.createElement('h2');title.textContent='Consulta do documento';
+      const hint=document.createElement('p');hint.className='helper';hint.textContent=message;
+      els.panelPlaceholder.append(title,hint);
+      els.panelPlaceholder.classList.remove('hidden');
+      els.addOverlayBtn.disabled=true;els.removeOverlayBtn.disabled=true;
+      els.changePdfBtn.classList.add('hidden');
+    }
+
+    async function queueOpenItem(item){
+      if(queueBusy)return;
+      if(item.deletedAt){alert('Restaure o documento antes de abri-lo.');return}
+      if(!item.currentFilePath){alert('Este documento ainda não possui um PDF disponível.');return}
+      queueBusy=true;
+      try{
+        const {data:blob,error}=await supabaseClient.storage.from('documentos').download(item.currentFilePath);
+        if(error)throw error;
+        const stage=QUEUE_STATUS[item.status];
+        const actionable=item.status!=='concluido' && (isFullAccess() || stage?.role===state.profile?.role);
+        const workspaceRole=actionable?stage.role:(state.profile?.role||'financeiro');
+        chooseRole(workspaceRole);
+        state.activeQueueId=item.id;
+        state.queueOriginalName=item.name;
+        state.queueReadOnly=!actionable;
+        const file=new File([blob],item.filename||item.originalName||'documento.pdf',{type:'application/pdf'});
+        await loadPdf(file,{isSaved:true});
+        if(!state.pdfDoc)throw new Error('Não foi possível abrir o arquivo');
+        els.changePdfBtn.classList.add('hidden');
+        if(state.queueReadOnly){
+          const message=item.status==='concluido'
+            ? 'Documento concluído. O PDF definitivo está disponível somente para consulta e download.'
+            : `Documento em andamento: ${stage?.label||item.status}. Nesta conta ele está disponível somente para consulta.`;
+          showReadOnlyPanel(message);
+          syncStampButtons();syncDownload();
+        }
+      }catch(error){console.error(error);alert('Não foi possível abrir o documento da fila.');}
+      finally{queueBusy=false}
+    }
+
+    function safeFilePart(name){
+      return (name||'documento.pdf').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/-+/g,'-').slice(0,120);
+    }
+
+    async function saveGeneratedPdfToSupabase(bytes,finalFilename,nextStatus){
+      if(!state.user)throw new Error('Sua sessão expirou. Entre novamente.');
+      const role=state.role;
+      const isNew=role==='financeiro' && !state.activeQueueId;
+      const documentId=state.activeQueueId||crypto.randomUUID();
+      const storageName=`${Date.now()}-${role}-${safeFilePart(finalFilename)}`;
+      const filePath=`${documentId}/${storageName}`;
+      const pdfBlob=new Blob([bytes],{type:'application/pdf'});
+
+      const {error:uploadError}=await supabaseClient.storage.from('documentos').upload(filePath,pdfBlob,{contentType:'application/pdf',upsert:false});
+      if(uploadError)throw uploadError;
+
+      const originalName=state.queueOriginalName||state.pdfName;
+      if(isNew){
+        const {error:docError}=await supabaseClient.from('documents').insert({
+          id:documentId,
+          nome:originalName,
+          original_name:state.pdfName,
+          status:nextStatus,
+          current_file_path:filePath,
+          created_by:state.user.id
+        });
+        if(docError)throw docError;
+      }else{
+        if(!state.activeQueueId)throw new Error('Documento da fila não identificado.');
+        // Timestamps de cada etapa sao preenchidos pelo trigger SQL no servidor.
+        const update={current_file_path:filePath,status:nextStatus};
+        // Evita finalizar duas vezes ou atualizar documento movido para a lixeira
+        // por outra pessoa/aba enquanto esta etapa estava aberta.
+        const expectedStatus=role==='administracao'?'aguardando_atesto':'aguardando_diretoria';
+        const {error:updateError}=await supabaseClient.from('documents').update(update)
+          .eq('id',documentId).eq('status',expectedStatus).is('deleted_at',null).select('id').single();
+        if(updateError)throw new Error('Documento alterado ou movido para a lixeira. Atualize a fila antes de salvar. '+updateError.message);
+      }
+
+      const {error:versionError}=await supabaseClient.from('document_versions').insert({
+        document_id:documentId,etapa:role,file_path:filePath,file_name:finalFilename,created_by:state.user.id
+      });
+      if(versionError)throw versionError;
+
+      const previousStatus=role==='financeiro'?null:role==='administracao'?'aguardando_atesto':'aguardando_diretoria';
+      const {error:historyError}=await supabaseClient.from('document_history').insert({
+        document_id:documentId,user_id:state.user.id,acao:`${role}_concluido`,status_anterior:previousStatus,status_novo:nextStatus,
+        detalhes:{arquivo:finalFilename}
+      });
+      if(historyError)throw historyError;
+
+      state.activeQueueId=documentId;
+      state.queueOriginalName=originalName;
+      await queueRefresh();
+      return documentId;
+    }
+
+    function setAuthMessage(text,type=''){
+      els.authMessage.textContent=text||'';
+      els.authMessage.className='auth-message'+(type?' '+type:'');
+    }
+
+    function applyRoleAccess(){
+      const role=state.profile?.role;
+      const accessAll=isFullAccess();
+      const roleLabels={financeiro:'Financeiro',administracao:'Administração',diretoria:'Diretoria'};
+      document.querySelectorAll('.role-card').forEach(card=>{
+        const current=card.dataset.role===role;
+        card.disabled=!accessAll&&!current;
+        card.classList.toggle('is-current',!accessAll&&current);
+      });
+      const helper=$('stageHelper');
+      if(helper)helper.textContent=accessAll
+        ? 'Acesso compartilhado: todas as etapas disponíveis. Para continuar uma nota, abra-a na fila.'
+        : role==='financeiro'
+          ? 'Clique em Financeiro para iniciar uma nova nota.'
+          : `Acesso a ${roleLabels[role]||role}. Abra um documento da fila para continuar.`;
+      els.currentUserText.textContent=`${state.profile?.nome||'Usuário'} · ${accessAll?'Acesso completo':roleLabels[role]||role||''}`;
+      $('queueFooter').textContent='Documentos sincronizados com a biblioteca privada da empresa.';
+    }
+
+    async function loadAuthenticatedUser(user){
+      state.user=user;
+      const {data,error}=await supabaseClient.from('profiles').select('id,nome,role,acesso_total').eq('id',user.id).single();
+      if(error)throw new Error('Seu usuário existe, mas ainda não possui um setor configurado no Carimbo Digital.');
+      state.profile=data;
+      state.role=data.role;
+      applyRoleAccess();
+      els.authScreen.classList.add('hidden');
+      els.roleScreen.classList.remove('hidden');
+      resetWorkspace(true);
+      resetForms();
+      await queueRefresh();
+    }
+
+    async function signIn(){
+      const entered=els.loginEmail.value.trim();
+      const password=els.loginPassword.value;
+      if(!entered||!password){setAuthMessage('Informe o usuário e a senha.','error');return}
+      const usingAlias=entered.toLowerCase()===SHARED_LOGIN_ALIAS;
+      const email=usingAlias?(window.localStorage.getItem(ALIAS_EMAIL_KEY)||'').trim():entered;
+      if(!email || !email.includes('@')){
+        setAuthMessage(usingAlias
+          ? 'Neste navegador, faça o primeiro acesso com o e-mail cadastrado. Depois poderá entrar como adm-itauba.'
+          : 'Informe o e-mail cadastrado ou o usuário adm-itauba.','error');return;
+      }
+      els.loginBtn.disabled=true;setAuthMessage('Entrando...');
+      // Alterna entre persistencia local e apenas esta aba.
+      const remember=els.rememberSession.checked;
+      keepSignedIn=remember;
+      if(remember)window.localStorage.setItem(REMEMBER_KEY,'1');
+      else window.localStorage.removeItem(REMEMBER_KEY);
+      try{
+        const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        await loadAuthenticatedUser(data.user);
+        // O identificador (nunca a senha) fica no navegador apos login autorizado.
+        if(isFullAccess() && data.user?.email){
+          window.localStorage.setItem(ALIAS_EMAIL_KEY,data.user.email);
+          els.loginEmail.value=SHARED_LOGIN_ALIAS;
+        }
+        setAuthMessage('');
+      }catch(error){
+        console.error(error);
+        setAuthMessage(error?.message==='Invalid login credentials'?'Usuário ou senha incorretos.':(error?.message||'Não foi possível entrar.'),'error');
+      }finally{els.loginBtn.disabled=false}
+    }
+
+    els.rememberSession.checked=rememberAtStart;
+    if(window.localStorage.getItem(ALIAS_EMAIL_KEY))els.loginEmail.value=SHARED_LOGIN_ALIAS;
+    els.togglePasswordBtn.addEventListener('click',()=>{
+      const reveal=els.loginPassword.type==='password';
+      els.loginPassword.type=reveal?'text':'password';
+      els.togglePasswordBtn.textContent=reveal?'Ocultar':'Exibir';
+      els.togglePasswordBtn.setAttribute('aria-pressed',String(reveal));
+    });
+    els.loginBtn.addEventListener('click',signIn);
+    els.loginPassword.addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});
+    els.logoutBtn.addEventListener('click',async()=>{
+      await supabaseClient.auth.signOut();
+      window.localStorage.removeItem(REMEMBER_KEY);keepSignedIn=false;els.rememberSession.checked=false;
+      state.user=null;state.profile=null;state.role=null;queueRecords=[];
+      resetWorkspace(true);resetForms();queueRender();
+      els.currentUserText.textContent='';els.roleScreen.classList.add('hidden');els.authScreen.classList.remove('hidden');
+      els.loginEmail.value=window.localStorage.getItem(ALIAS_EMAIL_KEY)?SHARED_LOGIN_ALIAS:'';
+      els.loginPassword.value='';els.loginPassword.type='password';els.togglePasswordBtn.textContent='Exibir';els.togglePasswordBtn.setAttribute('aria-pressed','false');setAuthMessage('Sessão encerrada.','success');
+    });
+
+    async function initAuth(){
+      try{
+        const {data:{session}}=await supabaseClient.auth.getSession();
+        if(session?.user){
+          await loadAuthenticatedUser(session.user);
+          if(isFullAccess() && session.user.email){
+            window.localStorage.setItem(ALIAS_EMAIL_KEY,session.user.email);
+            els.loginEmail.value=SHARED_LOGIN_ALIAS;
+          }
+        }
+        else{els.roleScreen.classList.add('hidden');els.authScreen.classList.remove('hidden')}
+      }catch(error){
+        console.error(error);els.roleScreen.classList.add('hidden');els.authScreen.classList.remove('hidden');
+        setAuthMessage('Não foi possível conectar ao serviço de login.','error');
+      }
+    }
+
+    const dateParts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+      timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'
+    }).formatToParts(new Date()).map(part=>[part.type,part.value]));
+    const localISO=`${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+    ["fData","fVistoData","aData","dData"].forEach(id => $(id).value = localISO);
+
+    function splitDate(value){
+      if(!value) return ["","",""];
+      const [y,m,d] = value.split("-");
+      return [d||"",m||"",y||""];
+    }
+
+    function formatDate(value){
+      const [d,m,y] = splitDate(value);
+      return d && m && y ? `${d}/${m}/${y}` : "";
+    }
+
+    function textWidth(text,font="36px Roboto,Arial"){
+      measureCtx.font=font;
+      return measureCtx.measureText(text||"").width;
+    }
+
+    function fitLine(text,maxWidth,font="36px Roboto,Arial"){
+      let raw=(text||"").trim();
+      if(!raw) return "";
+      if(textWidth(raw,font)<=maxWidth) return raw;
+      while(raw.length>1 && textWidth(raw+"…",font)>maxWidth) raw=raw.slice(0,-1);
+      return raw.trimEnd()+"…";
+    }
+
+    function wrapText(text,maxWidth,maxLines,font="36px Roboto,Arial"){
+      const words=(text||"").trim().split(/\s+/).filter(Boolean);
+      if(!words.length) return [];
+      const lines=[]; let current="";
+      for(let i=0;i<words.length;i++){
+        const candidate=current?`${current} ${words[i]}`:words[i];
+        if(textWidth(candidate,font)<=maxWidth){ current=candidate; }
+        else{
+          if(current) lines.push(current);
+          current=words[i];
+          if(lines.length===maxLines-1){
+            lines.push(fitLine([current,...words.slice(i+1)].join(" "),maxWidth,font));
+            return lines;
+          }
+        }
+      }
+      if(current && lines.length<maxLines) lines.push(current);
+      return lines.slice(0,maxLines);
+    }
+
+    function wrapTextToWidths(text,widths,font="36px Roboto,Arial"){
+      const words=(text||"").trim().split(/\s+/).filter(Boolean);
+      const lines=[];
+      let index=0;
+
+      for(let lineIndex=0; lineIndex<widths.length; lineIndex++){
+        const maxWidth=widths[lineIndex];
+        let line="";
+
+        while(index<words.length){
+          const candidate=line ? `${line} ${words[index]}` : words[index];
+          if(textWidth(candidate,font)<=maxWidth){
+            line=candidate;
+            index++;
+          }else{
+            break;
+          }
+        }
+
+        if(!line && index<words.length){
+          line=fitLine(words[index],maxWidth,font);
+          index++;
+        }
+
+        if(lineIndex===widths.length-1 && index<words.length){
+          line=fitLine([line,...words.slice(index)].filter(Boolean).join(" "),maxWidth,font);
+          index=words.length;
+        }
+
+        lines.push(line);
+      }
+
+      return lines;
+    }
+
+    // v8: SVGs fornecidos pelo usuário são os modelos gráficos definitivos.
+    // Rótulos, molduras, posições e linhas vêm dos arquivos originais;
+    // apenas valores exemplificativos foram retirados e substituídos por dados reais.
+    const BASE_BLUE_SVG="<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"azul-modelo-oficial\" data-name=\"Camada 1\" viewBox=\"0 0 295.28 __VIEW_HEIGHT__\">\n  <defs>\n    <style>\n      .azulcls-1 {\n        letter-spacing: -.02em;\n      }\n\n      .azulcls-2 {\n        letter-spacing: -.01em;\n      }\n\n      .azulcls-3 {\n        letter-spacing: 0em;\n      }\n\n      .azulcls-4 {\n        letter-spacing: 0em;\n      }\n\n      .azulcls-5 {\n        fill: #1d1d1b;\n      }\n\n      .azulcls-6 {\n        letter-spacing: -.03em;\n      }\n\n      .azulcls-7 {\n        letter-spacing: -.03em;\n      }\n\n      .azulcls-8 {\n        letter-spacing: 0em;\n      }\n\n      .azulcls-9 {\n        letter-spacing: 0em;\n      }\n\n      .azulcls-10 {\n        fill: #284395;\n        font-family: MyriadPro-Regular, 'Myriad Pro';\n        font-size: 10px;\n      }\n\n      .azulcls-11 {\n        letter-spacing: 0em;\n      }\n\n      .azulcls-12 {\n        fill: none;\n        stroke: #284395;\n        stroke-miterlimit: 10;\n        stroke-width: .5px;\n      }\n\n      .azulcls-13 {\n        letter-spacing: .03em;\n      }\n\n      .azulcls-14 {\n        letter-spacing: -.01em;\n      }\n\n      .azulcls-15 {\n        letter-spacing: 0em;\n      }\n    </style>\n  </defs>\n  <rect class=\"azulcls-12\" x=\"6.94\" y=\"7.53\" width=\"282.07\" height=\"__BORDER_HEIGHT__\"/>\n  <g>\n    <text class=\"azulcls-10\" transform=\"translate(17.95 25.84)\"><tspan x=\"0\" y=\"0\">D</tspan><tspan class=\"azulcls-3\" x=\"6.66\" y=\"0\">a</tspan><tspan x=\"11.44\" y=\"0\">ta:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(119.4 25.84)\"><tspan x=\"0\" y=\"0\">Ob</tspan><tspan class=\"azulcls-4\" x=\"12.58\" y=\"0\">r</tspan><tspan x=\"15.8\" y=\"0\">a:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(17.95 42.37)\"><tspan class=\"azulcls-9\" x=\"0\" y=\"0\">R</tspan><tspan x=\"5.42\" y=\"0\">e</tspan><tspan class=\"azulcls-11\" x=\"10.43\" y=\"0\">c</tspan><tspan class=\"azulcls-8\" x=\"14.85\" y=\"0\">ebido:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(17.95 59.82)\"><tspan class=\"azulcls-9\" x=\"0\" y=\"0\">D</tspan><tspan class=\"azulcls-8\" x=\"6.7\" y=\"0\">esc</tspan><tspan class=\"azulcls-15\" x=\"20.15\" y=\"0\">r</tspan><tspan class=\"azulcls-8\" x=\"23.46\" y=\"0\">ição:</tspan></text>\n    <line class=\"azulcls-12\" x1=\"42.62\" y1=\"25.5\" x2=\"112.55\" y2=\"25.5\"/>\n    <line class=\"azulcls-12\" x1=\"277.99\" y1=\"25.5\" x2=\"145.25\" y2=\"25.5\"/>\n    <line class=\"azulcls-12\" x1=\"61.4\" y1=\"41.95\" x2=\"277.95\" y2=\"41.95\"/>\n    <line class=\"azulcls-12\" x1=\"277.99\" y1=\"59.73\" x2=\"63.69\" y2=\"59.73\"/>\n    <line class=\"azulcls-12\" x1=\"277.99\" y1=\"73.5\" x2=\"18.69\" y2=\"73.5\"/>\n    </g>\n<g transform=\"translate(0,__DESCRICAO_EXTRA__)\"><text class=\"azulcls-10\" transform=\"translate(17.95 90.28)\"><tspan class=\"azulcls-13\" x=\"0\" y=\"0\">C</tspan><tspan class=\"azulcls-7\" x=\"6.08\" y=\"0\">T</tspan><tspan x=\"10.79\" y=\"0\">:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(96.1 90.28)\"><tspan class=\"azulcls-6\" x=\"0\" y=\"0\">P</tspan><tspan class=\"azulcls-8\" x=\"5.07\" y=\"0\">edido:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(192.25 90.28)\"><tspan class=\"azulcls-2\" x=\"0\" y=\"0\">T</tspan><tspan x=\"4.85\" y=\"0\">ítulo:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(17.95 109.26)\"><tspan class=\"azulcls-1\" x=\"0\" y=\"0\">V</tspan><tspan x=\"5.42\" y=\"0\">is</tspan><tspan class=\"azulcls-11\" x=\"11.72\" y=\"0\">t</tspan><tspan class=\"azulcls-8\" x=\"14.97\" y=\"0\">o:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(181.84 109.26)\"><tspan x=\"0\" y=\"0\">D</tspan><tspan class=\"azulcls-3\" x=\"6.66\" y=\"0\">a</tspan><tspan x=\"11.44\" y=\"0\">ta:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(17.95 127.84)\"><tspan class=\"azulcls-14\" x=\"0\" y=\"0\">A</tspan><tspan class=\"azulcls-11\" x=\"6.02\" y=\"0\">t</tspan><tspan x=\"9.27\" y=\"0\">es</tspan><tspan class=\"azulcls-11\" x=\"18.24\" y=\"0\">t</tspan><tspan class=\"azulcls-8\" x=\"21.49\" y=\"0\">o:</tspan></text>\n    <text class=\"azulcls-10\" transform=\"translate(181.84 127.84)\"><tspan x=\"0\" y=\"0\">D</tspan><tspan class=\"azulcls-3\" x=\"6.66\" y=\"0\">a</tspan><tspan x=\"11.44\" y=\"0\">ta:</tspan></text>\n    <line class=\"azulcls-12\" x1=\"208.06\" y1=\"109.06\" x2=\"277.99\" y2=\"109.06\"/>\n    <line class=\"azulcls-12\" x1=\"208.06\" y1=\"127.84\" x2=\"277.99\" y2=\"127.84\"/>\n    <line class=\"azulcls-12\" x1=\"277.99\" y1=\"89.95\" x2=\"221.26\" y2=\"89.95\"/>\n    <line class=\"azulcls-12\" x1=\"186.63\" y1=\"89.95\" x2=\"129.9\" y2=\"89.95\"/>\n    <line class=\"azulcls-12\" x1=\"90.98\" y1=\"89.95\" x2=\"34.25\" y2=\"89.95\"/>\n    <line class=\"azulcls-12\" x1=\"173.88\" y1=\"109.25\" x2=\"43.44\" y2=\"109.25\"/>\n    <line class=\"azulcls-12\" x1=\"173.88\" y1=\"127.32\" x2=\"49.73\" y2=\"127.32\"/>\n  </g></svg>";
+    const BASE_RED_SVG="<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"vermelho-modelo-oficial\" viewBox=\"0 0 295.28 __RED_VIEW_HEIGHT__\">\n  <rect x=\"6.94\" y=\"6.2\" width=\"282.07\" height=\"__RED_BORDER_HEIGHT__\" fill=\"none\" stroke=\"#e31213\" stroke-width=\".41\"/>\n  <g font-family=\"Arial, Helvetica, sans-serif\" fill=\"#e31213\" font-size=\"10\">\n    <text x=\"17.95\" y=\"23.6\" font-weight=\"700\">CONFERÊNCIA DA DIRETORIA</text>\n    <text x=\"17.95\" y=\"36.0\" font-weight=\"700\">Observações:</text>\n  </g>\n  <g stroke=\"#e31213\" stroke-width=\".48\" fill=\"none\">\n    <line x1=\"99\" y1=\"41.7\" x2=\"277.99\" y2=\"41.7\"/>\n    <line x1=\"18.69\" y1=\"55.5\" x2=\"277.99\" y2=\"55.5\"/>\n    <line x1=\"18.69\" y1=\"69.3\" x2=\"277.99\" y2=\"69.3\"/>\n  </g>\n  <g transform=\"translate(0,__OBS_EXTRA__)\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"10\" fill=\"#e31213\" font-weight=\"700\">\n    <text x=\"17.95\" y=\"83.4\">Assinatura:</text>\n    <text x=\"181.84\" y=\"83.4\">Data:</text>\n    <line x1=\"68\" y1=\"88.9\" x2=\"173.88\" y2=\"88.9\" stroke=\"#e31213\" stroke-width=\".48\"/>\n    <line x1=\"208.06\" y1=\"88.9\" x2=\"277.99\" y2=\"88.9\" stroke=\"#e31213\" stroke-width=\".48\"/>\n  </g>\n</svg>";
+    const STAMP_THEME={financeiro:'#284395',diretoria:'#e31213'};
+    const LABEL_FONT=10,VALUE_FONT=11;
+    let descricaoExtra=0,observacoesExtra=0;
+    const SVG_BLUE_W=295.28,SVG_BLUE_H=145.89,SVG_RED_H=100.11;
+
+    // Ajuste de largura sem reticências ou supressão silenciosa de dados.
+    // Campos excepcionalmente longos recebem fonte menor apenas quando necessário.
+    function valueMarkup(x,y,value,maxWidth,opts={}){
+      const raw=String(value??'');
+      const color=opts.color||'#1d1d1b';
+      let size=VALUE_FONT;
+      if(!raw)return '';
+      const width=()=>textWidth(raw,`${size}px Arial`);
+      while(width()>maxWidth && size>5.5)size=Math.max(5.5,size-.25);
+      const scale=width()>maxWidth ? maxWidth/width() : 1;
+      const attr=scale<1 ? ` transform="translate(${x} ${y}) scale(${scale} 1)" x="0" y="0"` : ` x="${x}" y="${y}"`;
+      return `<text${attr} font-family="Arial,sans-serif" font-size="${size}" font-weight="400" fill="${color}">${escapeXml(raw)}</text>`;
+    }
+
+    function wrapStampText(value,widths){
+      const words=String(value??'').trim().split(/\s+/).filter(Boolean);
+      const lines=[];
+      let line='';
+      let k=0;
+      const fits=(str,lim)=>textWidth(str,`${VALUE_FONT}px Arial`)<=lim;
+      for(const word of words){
+        const proposed=line?line+' '+word:word;
+        if(fits(proposed,widths[Math.min(k,widths.length-1)])){line=proposed;continue}
+        if(line){lines.push(line);k++;line=''}
+        if(fits(word,widths[Math.min(k,widths.length-1)])){line=word;continue}
+        // Exception: split unusually long uninterrupted tokens without losing characters.
+        let remaining=word;
+        while(remaining){
+          const lim=widths[Math.min(k,widths.length-1)];
+          let n=1;
+          while(n<remaining.length && fits(remaining.slice(0,n+1),lim))n++;
+          lines.push(remaining.slice(0,n));k++;
+          remaining=remaining.slice(n);
+        }
+      }
+      if(line)lines.push(line);
+      return lines;
+    }
+
+    function financeSvg(){
+      const d=formatDate($("fData").value);
+      const obra=$("fObra").value.trim(),recebido=$("fRecebido").value.trim();
+      const ct=$("fCT").value.trim(),pedido=$("fPedido").value.trim(),titulo=$("fTitulo").value.trim();
+      const vistoDate=formatDate($("fVistoData").value);
+      const sign=state.signatures.financeiro||'';
+      const lines=wrapStampText($("fDescricao").value,[205,250,250]);
+      descricaoExtra=15*Math.max(0,lines.length-2);
+      const height=SVG_BLUE_H+descricaoExtra;
+      let output=BASE_BLUE_SVG
+        .replaceAll('__DESCRICAO_EXTRA__',String(descricaoExtra))
+        .replaceAll('__BORDER_HEIGHT__',String(132.74+descricaoExtra))
+        .replaceAll('__VIEW_HEIGHT__',String(height));
+      let added=`<g class="valores-dinamicos">
+        ${valueMarkup(43.5,24.2,d,69,{color:'#1d1d1b'})}
+        ${valueMarkup(145.8,24.2,obra,132,{color:'#1d1d1b'})}
+        ${valueMarkup(61.2,41.2,recebido,215,{color:'#1d1d1b'})}
+        ${lines.map((s,i)=>valueMarkup(i===0?69.5:18.8,i===0?58.2:73.8+15*(i-1),s,i===0?206:258,{color:'#1d1d1b'})).join('')}
+        ${valueMarkup(35,89.3+descricaoExtra,ct,55,{color:'#1d1d1b'})}
+        ${valueMarkup(130,89.3+descricaoExtra,pedido,57,{color:'#1d1d1b'})}
+        ${valueMarkup(222,89.3+descricaoExtra,titulo,56,{color:'#1d1d1b'})}
+        ${sign?`<image href="${sign}" x="46" y="94.2" width="130" height="16" preserveAspectRatio="xMinYMid meet" transform="translate(0 ${descricaoExtra})"/>`:''}
+        ${valueMarkup(208.4,108.1+descricaoExtra,vistoDate,69,{color:'#1d1d1b'})}
+      </g>`;
+      return output.replace('</svg>',added+'</svg>');
+    }
+
+    function adminSvg(){
+      const date=formatDate($("aData").value);
+      const sign=state.signatures.administracao||'';
+      // Compatibilidade explícita com o novo arquivo v8 e PDFs anteriores.
+      if(state.financeStamp?.version===6 || state.financeStamp?.version===7){
+        // Apenas assinatura e data: o rótulo, linhas e borda já estão no PDF
+        // do Financeiro. O SVG ocupa exatamente a faixa ATESTO (y 112 a 131).
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 295.28 19" preserveAspectRatio="none">
+          ${sign?`<image href="${sign}" x="51" y="1.3" width="120" height="13" preserveAspectRatio="xMinYMid meet"/>`:''}
+          ${valueMarkup(208.5,13.5,date,68,{color:'#1d1d1b'})}
+        </svg>`;
+      }
+      if(state.financeStamp?.version===1){
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 86" preserveAspectRatio="none">
+          ${sign?`<image href="${sign}" x="155" y="8" width="535" height="68" preserveAspectRatio="xMinYMid meet"/>`:''}
+          <text x="855" y="54" font-family="Arial,sans-serif" font-size="36" fill="#092c56">${escapeXml(date)}</text>
+        </svg>`;
+      }
+      if(state.financeStamp?.version===4 || state.financeStamp?.version===5){
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 64" preserveAspectRatio="none">
+          ${sign?`<image href="${sign}" x="153" y="3" width="630" height="52" preserveAspectRatio="xMinYMid meet"/>`:''}
+          <text x="950" y="46" font-family="Arial,sans-serif" font-size="33" fill="#1d2630">${escapeXml(date)}</text>
+        </svg>`;
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 64" preserveAspectRatio="none">
+        ${sign?`<image href="${sign}" x="127" y="4" width="670" height="54" preserveAspectRatio="xMinYMid meet"/>`:''}
+        <text x="928" y="43" font-family="Arial,sans-serif" font-size="27" fill="#111111">${escapeXml(date)}</text>
+      </svg>`;
+    }
+
+    function directorSvg(){
+      // v11: etiquetas vermelhas em texto corrido (sem tspan com offsets
+      // fixos de uma fonte ausente); valores mantidos acima das linhas.
+      const obs=wrapStampText($("dObs").value,[174,257,257]);
+      const date=formatDate($("dData").value),sign=state.signatures.diretoria||'';
+      observacoesExtra=14*Math.max(0,obs.length-3);
+      const modelo=BASE_RED_SVG
+        .replaceAll('__OBS_EXTRA__',String(observacoesExtra))
+        .replaceAll('__RED_BORDER_HEIGHT__',String(87.36+observacoesExtra))
+        .replaceAll('__RED_VIEW_HEIGHT__',String(SVG_RED_H+observacoesExtra));
+      const added=`<g class="valores-dinamicos">
+        ${obs.map((s,i)=>valueMarkup(i===0?100:19.2,i===0?35.8:49.6+13.8*(i-1),s,i===0?176:257)).join('')}
+        ${obs.slice(3).map((s,i)=>`<line x1="18.69" y1="${83.1+i*14}" x2="277.99" y2="${83.1+i*14}" stroke="#e31213" stroke-width=".48"/>`).join('')}
+        ${sign?`<image href="${sign}" x="69" y="${70.5+observacoesExtra}" width="103" height="17" preserveAspectRatio="xMinYMid meet"/>`:''}
+        ${valueMarkup(209.5,82.1+observacoesExtra,date,68)}
+      </g>`;
+      return modelo.replace('</svg>',added+'</svg>');
+    }
+
+    function escapeXml(value){
+      return String(value??"").replace(/[<>&'"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]));
+    }
+
+    function renderActiveSvg(){
+      if(!state.role) return;
+      const markup = state.role==="financeiro" ? financeSvg() : state.role==="administracao" ? adminSvg() : directorSvg();
+      const doc = new DOMParser().parseFromString(markup,"image/svg+xml");
+      const source = doc.documentElement;
+      els.activeSvg.setAttribute("viewBox",source.getAttribute("viewBox"));
+      els.activeSvg.setAttribute("preserveAspectRatio","none");
+      els.activeSvg.innerHTML=source.innerHTML;
+      if(state.overlayVisible && (state.role==="financeiro" || state.role==="diretoria")){
+        const node=state.pageNodes.get(state.overlayPage);
+        if(node){
+          const ow=els.overlay.offsetWidth || parseFloat(els.overlay.style.width) || 0;
+          if(ow>0){
+            const h=ow/viewRatio();
+            els.overlay.style.height=`${h}px`;
+            const top=parseFloat(els.overlay.style.top)||0;
+            els.overlay.style.top=`${Math.min(top,Math.max(0,node.canvas.clientHeight-h))}px`;
+          }
+        }
+      }
+      updateSignatureStatuses();
+      syncDownload();
+    }
+
+    function viewRatio(){
+      if(state.role==="administracao") return state.financeStamp?.version>=6 ? 295.28/19 : (state.financeStamp?.version===1 ? 1200/86 : 1200/64);
+      if(state.role==="diretoria") return 295.28/(100.11+observacoesExtra);
+      return 295.28/(145.89+descricaoExtra);
+    }
+
+    // Base 100%: 52% da largura da página. A escala ajusta só o tamanho,
+    // sem alterar a proporção dos elementos do SVG ou o zoom do leitor PDF.
+    const BASE_STAMP_WIDTH_RATIO=.52;
+    const MIN_SCALE=50,MAX_SCALE=150,SCALE_STEP=5;
+    const LEGACY_RATIOS={small:.34,medium:.52,large:.70};
+    const FINANCE_STAMP_KEY="ITAUBA_CARIMBO_FINANCEIRO_V8:";
+    const V7_FINANCE_STAMP_KEY="ITAUBA_CARIMBO_FINANCEIRO_V4:";
+    const V3_FINANCE_STAMP_KEY="ITAUBA_CARIMBO_FINANCEIRO_V3:";
+    const PRIOR_FINANCE_STAMP_KEY="ITAUBA_CARIMBO_FINANCEIRO_V2:";
+    const LEGACY_FINANCE_STAMP_KEY="ITAUBA_CARIMBO_FINANCEIRO_V1:";
+    const FINANCE_META_PREFIXES=[FINANCE_STAMP_KEY,V7_FINANCE_STAMP_KEY,V3_FINANCE_STAMP_KEY,PRIOR_FINANCE_STAMP_KEY,LEGACY_FINANCE_STAMP_KEY];
+    const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+    const normalizedScale=value=>clamp(Math.round(Number(value)/SCALE_STEP)*SCALE_STEP,MIN_SCALE,MAX_SCALE);
+    function stampScaleFromMetadata(fin){
+      if(!fin)return state.stampScale;
+      if(fin.version>=3)return fin.scalePct;
+      return normalizedScale((LEGACY_RATIOS[fin.size]/BASE_STAMP_WIDTH_RATIO)*100);
+    }
+    function financeStampFromKeywords(keywords){
+      const encoded=(keywords||[]).find(k=>typeof k==="string" && FINANCE_META_PREFIXES.some(prefix=>k.startsWith(prefix)));
+      if(!encoded)return null;
+      try{
+        const prefix=FINANCE_META_PREFIXES.find(p=>encoded.startsWith(p));
+        const value=JSON.parse(atob(encoded.slice(prefix.length)));
+        if(![1,2,3,4,5,6,7].includes(value.version))return null;
+        if(value.version>=3){
+          if(!Number.isInteger(value.scalePct)||value.scalePct<MIN_SCALE||value.scalePct>MAX_SCALE||value.scalePct%SCALE_STEP!==0)return null;
+        }else if(!LEGACY_RATIOS[value.size])return null;
+        if(![value.page,value.xPt,value.topPt,value.widthPt,value.heightPt,value.pageWidthPt,value.pageHeightPt].every(Number.isFinite))return null;
+        if(!Number.isInteger(value.page)||value.page<1||value.widthPt<=0||value.heightPt<=0||value.pageWidthPt<=0||value.pageHeightPt<=0)return null;
+        if(value.xPt<0||value.topPt<0||value.xPt+value.widthPt>value.pageWidthPt+2||value.topPt+value.heightPt>value.pageHeightPt+2)return null;
+        if(value.version===7){
+          const rect=value.viewRect;
+          if(!rect || ![rect.x,rect.y,rect.w,rect.h].every(Number.isFinite) ||
+             rect.x<0 || rect.y<0 || rect.w<=0 || rect.h<=0 ||
+             rect.x+rect.w>1.01 || rect.y+rect.h>1.01)return null;
+        }
+        return value;
+      }catch(e){console.warn("Metadados do carimbo inválidos",e);return null}
+    }
+
+    // Geometria real do carimbo, calculada no referencial do PDF exibido.
+    // Antes da v13, o Financeiro gravava posicoes usando o MediaBox mesmo
+    // quando o PDF.js estava mostrando apenas o CropBox. O resultado era
+    // a faixa do Atesto maior e deslocada em relacao ao carimbo ja gravado.
+    // Em PDFs legados, convertemos para pixels os cantos do OBJETO que foi
+    // efetivamente desenhado no PDF, nao os pixels da antiga previa.
+    function financeStampDisplayBox(fin,node){
+      const cw=node.canvas.clientWidth,ch=node.canvas.clientHeight;
+      if(fin.version===7 && fin.viewRect){
+        const r=fin.viewRect;
+        return {left:r.x*cw,top:r.y*ch,width:r.w*cw,height:r.h*ch};
+      }
+      const viewport=node.viewport;
+      if(typeof viewport?.convertToViewportPoint==='function'){
+        const bottomY=fin.pageHeightPt-fin.topPt-fin.heightPt;
+        const corners=[
+          viewport.convertToViewportPoint(fin.xPt,bottomY),
+          viewport.convertToViewportPoint(fin.xPt+fin.widthPt,bottomY+fin.heightPt),
+          viewport.convertToViewportPoint(fin.xPt,bottomY+fin.heightPt),
+          viewport.convertToViewportPoint(fin.xPt+fin.widthPt,bottomY)
+        ];
+        const xs=corners.map(p=>p[0]),ys=corners.map(p=>p[1]);
+        const left=Math.min(...xs),top=Math.min(...ys);
+        return {left,top,width:Math.max(...xs)-left,height:Math.max(...ys)-top};
+      }
+      return {left:fin.xPt*cw/fin.pageWidthPt,
+        top:fin.topPt*ch/fin.pageHeightPt,
+        width:fin.widthPt*cw/fin.pageWidthPt,
+        height:fin.heightPt*ch/fin.pageHeightPt};
+    }
+
+    function showAdminStampSize(){
+      if(!els.adminSizeMessage)return;
+      const known=state.financeStamp;
+      els.adminSizeMessage.textContent=known
+        ? `Escala definida pelo Financeiro; Atesto alinhado à página ${known.page}. ${known.version<7?"Confira visualmente o encaixe do arquivo antigo antes de exportar.":""}`
+        : state.pdfDoc
+          ? "Medidas do Financeiro não encontradas. O Atesto pode ser aplicado manualmente: ajuste a escala e arraste até a linha correta antes de salvar a etapa."
+          : "Envie um PDF gerado pelo Financeiro para recuperar a escala automaticamente.";
+      els.adminSizeMessage.classList.toggle("warning",Boolean(state.pdfDoc && !known));
+    }
+
+    function updateStampSizeControls(){
+      const fin=state.role==="administracao" ? state.financeStamp : null;
+      const effective=fin?stampScaleFromMetadata(fin):state.stampScale;
+      document.querySelectorAll("#financePanel,#adminPanel,#directorPanel").forEach(panel=>{
+        const admin=panel.id==="adminPanel";
+        const locked=admin && Boolean(fin);
+        const range=panel.querySelector(".stamp-scale");
+        const value=panel.querySelector(".scale-value");
+        const reset=panel.querySelector(".reset-scale");
+        if(!range || !value || !reset)return;
+        range.value=String(effective);
+        value.textContent=`${effective}%`;
+        range.disabled=!state.pdfDoc || locked;
+        reset.disabled=!state.pdfDoc || locked || state.stampScale===100;
+      });
+      showAdminStampSize();
+    }
+
+    // Mudança da escala permitida ANTES e DEPOIS de adicionar.
+    // Mantém o centro atual da prévia e respeita os limites da página PDF.
+    function applyStampScale(scale){
+      if(!state.pdfDoc || (state.role==="administracao" && state.financeStamp))return;
+      state.stampScale=normalizedScale(scale);
+      if(state.overlayVisible){
+        const node=state.pageNodes.get(state.overlayPage);
+        if(node){
+          const cw=node.canvas.clientWidth,ch=node.canvas.clientHeight;
+          const ratio=viewRatio();
+          let width=Math.min(cw-12,cw*BASE_STAMP_WIDTH_RATIO*state.stampScale/100);
+          let height=width/ratio;
+          if(height>ch-12){height=ch-12;width=height*ratio}
+          const priorLeft=parseFloat(els.overlay.style.left)||0;
+          const priorTop=parseFloat(els.overlay.style.top)||0;
+          const cx=priorLeft+els.overlay.offsetWidth/2;
+          const cy=priorTop+els.overlay.offsetHeight/2;
+          els.overlay.style.width=`${width}px`;
+          els.overlay.style.height=`${height}px`;
+          els.overlay.style.left=`${clamp(cx-width/2,0,Math.max(0,cw-width))}px`;
+          els.overlay.style.top=`${clamp(cy-height/2,0,Math.max(0,ch-height))}px`;
+        }
+      }
+      updateStampSizeControls();
+    }
+
+    function chooseRole(role){
+      if(state.profile && !isFullAccess() && role!==state.profile.role)return;
+      state.role=role;
+      resetWorkspace(false);
+      resetForms();
+      els.roleScreen.classList.add("hidden");
+      els.panelPlaceholder.classList.add("hidden");
+      els.financePanel.classList.toggle("hidden",role!=="financeiro");
+      els.adminPanel.classList.toggle("hidden",role!=="administracao");
+      els.directorPanel.classList.toggle("hidden",role!=="diretoria");
+
+      const meta=roleMeta[role];
+      els.addOverlayBtn.textContent=meta.addLabel;
+      els.removeOverlayBtn.textContent=meta.removeLabel;
+      els.addOverlayBtn.className=`btn ${role==="diretoria"?"director":"success"}`;
+      els.overlay.dataset.mode=role;
+      els.overlay.classList.toggle("admin-guide",role==="administracao");
+      updateStampSizeControls();
+      els.emptyState.style.display="grid";
+      els.uploadPdfBtn.classList.toggle("hidden",role!=="financeiro");
+      els.newNoteBtn.classList.toggle("hidden",role!=="financeiro");
+      window.scrollTo(0,0);
+      renderActiveSvg();
+    }
+
+    function returnToRoleSelection(){
+      if((state.pdfBytes || hasAnyData()) && !confirm("Voltar à fila? Alterações não salvas serão descartadas. Documentos já salvos continuarão disponíveis.")) return;
+      resetWorkspace(true);
+      resetForms();
+      els.financePanel.classList.add("hidden");
+      els.adminPanel.classList.add("hidden");
+      els.directorPanel.classList.add("hidden");
+      els.panelPlaceholder.classList.remove("hidden");
+      els.roleScreen.classList.remove("hidden");
+      queueRoleFilter=null;
+      queueRefresh();
+      window.scrollTo(0,0);
+    }
+
+    document.querySelectorAll(".role-card").forEach(btn=>btn.addEventListener("click",()=>{
+      if(btn.disabled || (!isFullAccess() && btn.dataset.role!==state.profile?.role))return;
+      if(btn.dataset.role==='financeiro'){
+        queueRoleFilter=null;
+        chooseRole('financeiro');
+        return;
+      }
+      // Etapas 2 e 3 exigem um documento da fila, nao um upload isolado.
+      queueRoleFilter=btn.dataset.role;
+      queueTab='andamento';queueRender();
+      if(!statusItemsForCurrentRole().length){
+        alert(`Não há documentos aguardando ${roleMeta[queueRoleFilter].label}.`);
+        return;
+      }
+      document.querySelector('.home-queue').scrollIntoView({behavior:'smooth',block:'nearest'});
+    }));
+    els.backToRolesBtn.addEventListener("click",returnToRoleSelection);
+    els.uploadPdfBtn.addEventListener("click",()=>{if(state.role==="financeiro")els.pdfInput.click()});
+    els.changePdfBtn.addEventListener("click",()=>{if(state.role==="financeiro" && !state.activeQueueId)els.pdfInput.click()});
+
+
+    function syncStampButtons(){
+      const hasSignature=Boolean(state.role && state.signatures[state.role]);
+      els.addOverlayBtn.disabled=state.queueReadOnly || !state.pdfDoc || !hasSignature || state.overlayVisible;
+      els.removeOverlayBtn.disabled=!state.overlayVisible;
+    }
+
+    async function loadPdf(file,{skipConfirm=false,isSaved=false}={}){
+      if(file.type!=="application/pdf" && !/\.pdf$/i.test(file.name)){alert("Selecione um arquivo PDF.");return}
+      if(state.pdfBytes && !skipConfirm && !confirm("Substituir o PDF atual? Alterações não salvas serão descartadas.")) return;
+      const generation=++state.renderGeneration;
+      if(state.pageObserver){state.pageObserver.disconnect();state.pageObserver=null}
+      try{
+        const bytes=new Uint8Array(await file.arrayBuffer());
+        const doc=await pdfjsLib.getDocument({data:bytes.slice()}).promise;
+        if(generation!==state.renderGeneration) return;
+        // Preferimos o tamanho exato gravado pelo Financeiro. Em PDFs externos
+        // ou sem metadados, o Atesto fica disponível para encaixe manual.
+        let financeStamp=null;
+        if(state.role==="administracao"){
+          try{
+            const source=await PDFDocument.load(bytes.slice(),{updateMetadata:false});
+            financeStamp=financeStampFromKeywords(source.getKeywords());
+            if(financeStamp && financeStamp.page>doc.numPages)financeStamp=null;
+          }catch(error){console.warn("Não foi possível recuperar o tamanho do Financeiro",error)}
+        }
+        if(generation!==state.renderGeneration)return;
+        state.financeStamp=financeStamp;
+        state.pdfFitMode='page';
+        state.pdfZoom=await calculatePageFitZoom(doc);
+        state.stampScale=financeStamp?stampScaleFromMetadata(financeStamp):100;
+        state.pdfName=file.name;state.pdfBytes=bytes;state.pdfDoc=doc;
+        state.savedPdfBytes=isSaved?bytes.slice():null;
+        state.savedPdfName=isSaved?file.name:null;
+        state.pageCount=doc.numPages;state.currentPage=1;state.overlayPage=1;
+        state.overlayVisible=false;els.overlay.classList.add("hidden");
+        els.emptyState.style.display="none";
+        els.newNoteBtn.disabled=state.role!=="financeiro";
+        els.changePdfBtn.classList.toggle("hidden",state.role!=="financeiro" || Boolean(state.activeQueueId));
+        els.pageNavRail.classList.remove("hidden");
+        els.pdfZoomControls.classList.remove("hidden");
+        updatePdfZoomControls();
+        els.pageNumberInput.max=String(state.pageCount);
+        els.pageTotal.textContent=String(state.pageCount);
+        els.pageInfo.textContent=state.pageCount===1?"1 página":`${state.pageCount} páginas`;
+        updateStampSizeControls();
+        syncStampButtons();
+        await buildPageStack(generation);
+        if(generation===state.renderGeneration){
+          updateCurrentPageFromScroll();syncStampButtons();syncDownload();
+        }
+      }catch(err){
+        console.error(err);alert("Não foi possível abrir o PDF. Verifique o arquivo e tente novamente.");
+        resetWorkspace(false);
+      }
+    }
+
+    els.pdfInput.addEventListener("change",async e=>{
+      const file=e.target.files?.[0];
+      if(!file)return;
+      await loadPdf(file);els.pdfInput.value="";
+    });
+
+    async function calculatePageFitZoom(pdfDoc=state.pdfDoc){
+      if(!pdfDoc)return 100;
+      const page=await pdfDoc.getPage(1);
+      const size=page.getViewport({scale:1});
+      const availableWidth=Math.max(160,els.pdfHorizontalViewport.clientWidth-12);
+      // Desconta cabecalho e barra de ferramentas: o documento cabe no notebook.
+      const top=Math.max(100,Math.min(els.documentArea.getBoundingClientRect().top,260));
+      const availableHeight=Math.max(240,window.innerHeight-top-34);
+      const fullWidthHeight=availableWidth*size.height/size.width;
+      return clamp(Math.round(100*Math.min(1,availableHeight/fullWidthHeight)),20,100);
+    }
+
+    // Todas as páginas ficam na mesma coluna, mas o PDF só é rasterizado
+    // próximo da região visível para evitar uso excessivo de memória.
+    async function buildPageStack(generation){
+      state.pageNodes.clear();
+      els.pageShell.appendChild(els.overlay);
+      els.pagesStack.replaceChildren(els.pageShell);
+      const availableWidth=Math.max(160,els.pdfHorizontalViewport.clientWidth-12);
+      // Escala relativa a ajustar à largura (100%); inicio calculado para caber na tela.
+      els.canvas=document.createElement("canvas");
+      els.canvas.id="pdfCanvas";
+      els.pageShell.replaceChildren(els.canvas,els.overlay);
+      for(let i=1;i<=state.pageCount;i++){
+        if(generation!==state.renderGeneration)return;
+        const page=await state.pdfDoc.getPage(i);
+        const natural=page.getViewport({scale:1});
+        const scale=(availableWidth/natural.width)*(state.pdfZoom/100);
+        const viewport=page.getViewport({scale});
+        const shell=i===1 ? els.pageShell : document.createElement("div");
+        const canvas=i===1 ? els.canvas : document.createElement("canvas");
+        shell.className="page-shell";
+        shell.dataset.page=String(i);
+        shell.setAttribute("aria-label",`Página ${i} de ${state.pageCount}`);
+        if(i!==1){canvas.className="pdf-page-canvas";shell.appendChild(canvas);els.pagesStack.appendChild(shell)}
+        shell.style.width=`${viewport.width}px`;
+        shell.style.height=`${viewport.height}px`;
+        canvas.style.width=`${viewport.width}px`;
+        canvas.style.height=`${viewport.height}px`;
+        state.pageNodes.set(i,{shell,canvas,viewport,rendering:false,rendered:false});
+      }
+      if(generation!==state.renderGeneration)return;
+      state.pageObserver=new IntersectionObserver(entries=>{
+        for(const entry of entries){
+          if(entry.isIntersecting){
+            const i=Number(entry.target.dataset.page);
+            renderPdfPage(i,generation).catch(e=>console.error("Erro ao desenhar página",i,e));
+          }
+        }
+      },{root:null,rootMargin:"850px 0px",threshold:0});
+      for(const node of state.pageNodes.values())state.pageObserver.observe(node.shell);
+      await renderPdfPage(1,generation);
+    }
+
+    function updatePdfZoomControls(){
+      els.pdfZoomValue.textContent=`${state.pdfZoom}%`;
+      els.zoomOutBtn.disabled=!state.pdfDoc || state.pdfZoom<=20;
+      els.zoomInBtn.disabled=!state.pdfDoc || state.pdfZoom>=250;
+      els.zoomFitBtn.disabled=!state.pdfDoc;
+      els.zoomFitPageBtn.disabled=!state.pdfDoc;
+      els.zoomFitBtn.setAttribute('aria-pressed',String(state.pdfFitMode==='width'));
+      els.zoomFitPageBtn.setAttribute('aria-pressed',String(state.pdfFitMode==='page'));
+    }
+    async function changePdfZoom(next,mode='manual'){
+      if(!state.pdfDoc)return;
+      next=clamp(mode==='manual'?Math.round(next/10)*10:Math.round(next),20,250);
+      if(next===state.pdfZoom){state.pdfFitMode=mode;updatePdfZoomControls();return}
+      const oldNode=state.pageNodes.get(state.currentPage);
+      const currentRect=oldNode?.shell.getBoundingClientRect();
+      const oldTop=currentRect?.top ?? null;
+      const oldScrollLeft=els.pdfHorizontalViewport.scrollLeft;
+      const oldZoom=state.pdfZoom;
+      let overlayRecord=null;
+      if(state.overlayVisible){
+        const node=state.pageNodes.get(state.overlayPage);
+        if(node){
+          const w=node.canvas.clientWidth,h=node.canvas.clientHeight;
+          overlayRecord={page:state.overlayPage,x:(parseFloat(els.overlay.style.left)||0)/w,
+            y:(parseFloat(els.overlay.style.top)||0)/h,
+            w:els.overlay.offsetWidth/w,h:els.overlay.offsetHeight/h};
+        }
+      }
+      const current=state.currentPage;
+      const generation=++state.renderGeneration;
+      state.pageObserver?.disconnect();state.pageObserver=null;
+      state.pdfZoom=next;state.pdfFitMode=mode;
+      updatePdfZoomControls();
+      try{
+        await buildPageStack(generation);
+        if(generation!==state.renderGeneration)return;
+        const newNode=state.pageNodes.get(current);
+        state.currentPage=current;
+        if(newNode && oldTop!==null){
+          const change=newNode.shell.getBoundingClientRect().top-oldTop;
+          window.scrollBy({top:change,behavior:'instant'});
+        }
+        els.pdfHorizontalViewport.scrollLeft=oldScrollLeft*next/oldZoom;
+        if(overlayRecord){
+          const target=state.pageNodes.get(overlayRecord.page);
+          if(target){
+            target.shell.appendChild(els.overlay);
+            const cw=target.canvas.clientWidth,ch=target.canvas.clientHeight;
+            const ow=overlayRecord.w*cw,oh=overlayRecord.h*ch;
+            els.overlay.style.width=`${ow}px`;els.overlay.style.height=`${oh}px`;
+            els.overlay.style.left=`${clamp(overlayRecord.x*cw,0,Math.max(0,cw-ow))}px`;
+            els.overlay.style.top=`${clamp(overlayRecord.y*ch,0,Math.max(0,ch-oh))}px`;
+          }
+        }
+        renderPdfPage(current,generation).catch(console.error);
+        els.pageNumberInput.value=String(current);
+        els.prevPageBtn.disabled=current<=1;els.nextPageBtn.disabled=current>=state.pageCount;
+      }catch(err){console.error('Falha ao alterar zoom',err)}
+    }
+    els.zoomOutBtn.addEventListener('click',()=>changePdfZoom(state.pdfZoom-10));
+    els.zoomInBtn.addEventListener('click',()=>changePdfZoom(state.pdfZoom+10));
+    els.zoomFitBtn.addEventListener('click',()=>changePdfZoom(100,'width'));
+    els.zoomFitPageBtn.addEventListener('click',async()=>changePdfZoom(await calculatePageFitZoom(),'page'));
+    els.documentArea.addEventListener('wheel',e=>{
+      if(!state.pdfDoc||!(e.ctrlKey||e.metaKey))return;
+      e.preventDefault();e.stopPropagation();
+      if(e.deltaY===0)return;
+      changePdfZoom(state.pdfZoom+(e.deltaY<0?10:-10));
+    },{passive:false,capture:true});
+    let resizeTimer=0;
+    window.addEventListener('resize',()=>{
+      if(!state.pdfDoc||state.pdfFitMode!=='page')return;
+      clearTimeout(resizeTimer);
+      resizeTimer=setTimeout(async()=>{
+        if(state.pdfDoc&&state.pdfFitMode==='page')await changePdfZoom(await calculatePageFitZoom(),'page');
+      },180);
+    });
+
+    async function renderPdfPage(number,generation=state.renderGeneration){
+      const node=state.pageNodes.get(number);
+      if(!node || node.rendered || node.rendering || generation!==state.renderGeneration)return;
+      node.rendering=true;
+      try{
+        const page=await state.pdfDoc.getPage(number);
+        if(generation!==state.renderGeneration)return;
+        node.canvas.width=Math.ceil(node.viewport.width);
+        node.canvas.height=Math.ceil(node.viewport.height);
+        await page.render({canvasContext:node.canvas.getContext("2d"),viewport:node.viewport}).promise;
+        if(generation===state.renderGeneration)node.rendered=true;
+      }finally{node.rendering=false}
+    }
+
+    function updateCurrentPageFromScroll(){
+      if(!state.pdfDoc || !state.pageNodes.size)return;
+      const viewportTop=Math.max(60,0),viewportBottom=window.innerHeight;
+      const center=(viewportTop+viewportBottom)/2;
+      let best=state.currentPage,closest=Infinity;
+      for(const [number,node] of state.pageNodes){
+        const rect=node.shell.getBoundingClientRect();
+        if(rect.bottom<viewportTop || rect.top>viewportBottom)continue;
+        // A página que ocupa o centro do visor tem prioridade.
+        const gap=rect.top<=center && rect.bottom>=center ? 0 : Math.min(Math.abs(rect.top-center),Math.abs(rect.bottom-center));
+        if(gap<closest){closest=gap;best=number}
+      }
+      if(closest===Infinity)return;
+      state.currentPage=best;
+      if(document.activeElement!==els.pageNumberInput)els.pageNumberInput.value=String(best);
+      els.prevPageBtn.disabled=best<=1;
+      els.nextPageBtn.disabled=best>=state.pageCount;
+    }
+    // Não reinterpretar como escolha de página o scroll automático que ocorre
+    // quando alguém clica num campo do formulário ou no botão do carimbo.
+    let scrollFrame=0,userScrolling=false;
+    window.addEventListener("wheel",()=>{userScrolling=true},{passive:true});
+    window.addEventListener("touchmove",()=>{userScrolling=true},{passive:true});
+    window.addEventListener("keydown",e=>{
+      if(e.target.matches("input,textarea,select"))return;
+      if(["PageDown","PageUp","ArrowUp","ArrowDown","Home","End"," "].includes(e.key))userScrolling=true;
+    });
+    window.addEventListener("pointerdown",e=>{
+      userScrolling=!e.target.closest("button,input,select,textarea,dialog");
+    },{capture:true,passive:true});
+    window.addEventListener("scroll",()=>{
+      if(scrollFrame||!userScrolling)return;
+      scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;updateCurrentPageFromScroll()});
+    },{passive:true});
+
+    function goToPage(number){
+      if(!state.pdfDoc)return;
+      const valid=Number(number);
+      if(!Number.isInteger(valid)||valid<1||valid>state.pageCount){
+        els.pageNumberInput.value=String(state.currentPage);return;
+      }
+      const node=state.pageNodes.get(valid);
+      if(!node)return;
+      userScrolling=false;
+      state.currentPage=valid;
+      els.pageNumberInput.value=String(valid);
+      els.prevPageBtn.disabled=valid<=1;
+      els.nextPageBtn.disabled=valid>=state.pageCount;
+      node.shell.scrollIntoView({behavior:"smooth",block:"center"});
+      renderPdfPage(valid).catch(console.error);
+    }
+    els.prevPageBtn.addEventListener("click",()=>goToPage(state.currentPage-1));
+    els.nextPageBtn.addEventListener("click",()=>goToPage(state.currentPage+1));
+    els.pageNumberInput.addEventListener("keydown",e=>{
+      if(e.key==="Enter"){e.preventDefault();goToPage(Number(els.pageNumberInput.value));els.pageNumberInput.blur()}
+    });
+    els.pageNumberInput.addEventListener("change",()=>goToPage(Number(els.pageNumberInput.value)));
+
+    function syncOverlayVisibility(){
+      els.overlay.classList.toggle("hidden",!state.overlayVisible);
+      syncStampButtons();syncDownload();
+    }
+
+    function canSave(){
+      return !state.saveBusy && !state.queueReadOnly && Boolean(state.pdfBytes && state.overlayVisible && state.role && state.signatures[state.role]);
+    }
+    function canDownload(){return !state.saveBusy && Boolean(state.savedPdfBytes)}
+    function syncDownload(){
+      els.saveBtn.disabled=!canSave();
+      els.downloadBtn.disabled=!canDownload();
+      els.downloadBtn.title=state.savedPdfBytes?'Baixar última versão salva':'Salve a etapa para liberar o download';
+    }
+
+    els.addOverlayBtn.addEventListener("click",async()=>{
+      if(!state.pdfDoc || !state.signatures[state.role] || state.overlayVisible)return;
+      if(state.role==="administracao" && state.financeStamp && state.currentPage!==state.financeStamp.page){
+        alert(`O carimbo do Financeiro está na página ${state.financeStamp.page}. Navegue até ela para adicionar o Atesto.`);
+        return;
+      }
+      state.overlayPage=state.currentPage;
+      const node=state.pageNodes.get(state.overlayPage);
+      if(!node)return;
+      await renderPdfPage(state.overlayPage);
+      node.shell.appendChild(els.overlay);
+      state.overlayVisible=true;
+
+      const cw=node.canvas.clientWidth,ch=node.canvas.clientHeight;
+      const ratio=viewRatio();
+      let width,height,left,top;
+      if(state.role==="administracao" && state.financeStamp){
+        const fin=state.financeStamp;
+        const stampBox=financeStampDisplayBox(fin,node);
+        width=stampBox.width;
+        left=stampBox.left;
+        // ATESTO corresponde a linha inferior do SVG azul original. A
+        // altura e a posicao continuam proporcionais ao carimbo REAL no PDF.
+        const modelSvgHeight=(fin.version>=6)?(SVG_BLUE_W*stampBox.height/stampBox.width):null;
+        const rowTop=(fin.version>=6)
+          ? (Number.isFinite(fin.atestoRowFraction)?fin.atestoRowFraction:112/modelSvgHeight)
+          : (fin.version===1?540/680:(fin.version===4||fin.version===5)?400/480:384/448);
+        const rowHeight=(fin.version>=6)
+          ? (Number.isFinite(fin.atestoRowHeightFraction)?fin.atestoRowHeightFraction:19/modelSvgHeight)
+          : null;
+        height=(fin.version>=6)?stampBox.height*rowHeight:width/ratio;
+        top=stampBox.top+stampBox.height*rowTop;
+        // Evita que arredondamentos/pixels fracionarios atravessem a borda.
+        left=clamp(left,0,cw-width);
+        top=clamp(top,0,ch-height);
+      }else{
+        width=Math.min(cw-12,cw*BASE_STAMP_WIDTH_RATIO*state.stampScale/100);
+        height=width/ratio;
+        if(height>ch-12){height=ch-12;width=height*ratio}
+        left=Math.max(6,(cw-width)/2);
+        top=Math.max(6,ch-height-26);
+      }
+      els.overlay.style.width=`${width}px`;
+      els.overlay.style.height=`${height}px`;
+      els.overlay.style.left=`${Math.max(0,Math.min(left,cw-width))}px`;
+      els.overlay.style.top=`${Math.max(0,Math.min(top,ch-height))}px`;
+      // O overlay inicia com display:none. Revele-o antes de medir sua largura:
+      // renderActiveSvg() utiliza offsetWidth para calcular a altura real.
+      syncOverlayVisibility();
+      renderActiveSvg();
+      updateStampSizeControls();
+    });
+
+    els.removeOverlayBtn.addEventListener("click",()=>{
+      if(!confirm(`Remover ${roleMeta[state.role].addLabel.toLowerCase().replace("adicionar ","")} deste PDF?`)) return;
+      state.overlayVisible=false;
+      syncOverlayVisibility();
+      updateStampSizeControls();
+    });
+
+    document.querySelectorAll(".stamp-scale").forEach(range=>{
+      range.addEventListener("input",()=>{
+        if(!range.closest(`#${state.role==="financeiro"?"financePanel":state.role==="administracao"?"adminPanel":"directorPanel"}`))return;
+        applyStampScale(range.value);
+      });
+    });
+    document.querySelectorAll(".reset-scale").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        if(!btn.closest(`#${state.role==="financeiro"?"financePanel":state.role==="administracao"?"adminPanel":"directorPanel"}`))return;
+        applyStampScale(100);
+      });
+    });
+
+    // Arrastar altera apenas a posição; o tamanho muda exclusivamente pelo slider.
+    let dragStart=null;
+    els.overlay.addEventListener("pointerdown",e=>{
+      // Para documentos v13, o Atesto ja esta exatamente ancorado na faixa
+      // do Financeiro. Arrastar acidentalmente destruiria esse alinhamento.
+      if(state.role==="administracao" && state.financeStamp?.version===7)return;
+      dragStart={x:e.clientX,y:e.clientY,left:parseFloat(els.overlay.style.left)||0,top:parseFloat(els.overlay.style.top)||0};
+      els.overlay.setPointerCapture(e.pointerId);e.preventDefault();
+    });
+    els.overlay.addEventListener("pointermove",e=>{
+      if(!dragStart)return;
+      const node=state.pageNodes.get(state.overlayPage);
+      if(!node)return;
+      const cw=node.canvas.clientWidth,ch=node.canvas.clientHeight;
+      const maxL=Math.max(0,cw-els.overlay.offsetWidth),maxT=Math.max(0,ch-els.overlay.offsetHeight);
+      els.overlay.style.left=`${Math.min(maxL,Math.max(0,dragStart.left+e.clientX-dragStart.x))}px`;
+      els.overlay.style.top=`${Math.min(maxT,Math.max(0,dragStart.top+e.clientY-dragStart.y))}px`;
+    });
+    els.overlay.addEventListener("pointerup",()=>{dragStart=null});
+    els.overlay.addEventListener("pointercancel",()=>{dragStart=null});
+
+    const sigCtx=els.sigCanvas.getContext("2d");
+    function setupPen(){
+      sigCtx.lineWidth=5;sigCtx.lineCap="round";sigCtx.lineJoin="round";
+      sigCtx.strokeStyle="#111111";
+    }
+    function clearPad(){
+      sigCtx.clearRect(0,0,els.sigCanvas.width,els.sigCanvas.height);
+      els.sigFile.value="";
+    }
+    function point(e){
+      const r=els.sigCanvas.getBoundingClientRect();
+      return {x:(e.clientX-r.left)*els.sigCanvas.width/r.width,y:(e.clientY-r.top)*els.sigCanvas.height/r.height};
+    }
+    els.sigCanvas.addEventListener("pointerdown",e=>{
+      state.drawing=true;state.lastPoint=point(e);els.sigCanvas.setPointerCapture(e.pointerId);
+    });
+    els.sigCanvas.addEventListener("pointermove",e=>{
+      if(!state.drawing) return;
+      const p=point(e);sigCtx.beginPath();sigCtx.moveTo(state.lastPoint.x,state.lastPoint.y);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();state.lastPoint=p;
+    });
+    els.sigCanvas.addEventListener("pointerup",()=>{state.drawing=false;state.lastPoint=null});
+
+    function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src})}
+
+    async function trimSignatureDataUrl(src){
+      const img=await loadImage(src);
+      const c=document.createElement("canvas");c.width=img.width;c.height=img.height;
+      const x=c.getContext("2d");x.drawImage(img,0,0);
+      const data=x.getImageData(0,0,c.width,c.height).data;
+      let left=c.width,right=0,top=c.height,bottom=0,found=false;
+      for(let y=0;y<c.height;y++){
+        for(let z=0;z<c.width;z++){
+          const q=(y*c.width+z)*4,R=data[q],G=data[q+1],B=data[q+2],A=data[q+3];
+          if(A>20 && !(R>245&&G>245&&B>245)){found=true;left=Math.min(left,z);right=Math.max(right,z);top=Math.min(top,y);bottom=Math.max(bottom,y)}
+        }
+      }
+      if(!found) return "";
+      const pad=14;
+      left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(c.width-1,right+pad);bottom=Math.min(c.height-1,bottom+pad);
+      const out=document.createElement("canvas");out.width=right-left+1;out.height=bottom-top+1;
+      const outCtx=out.getContext("2d");
+      outCtx.drawImage(c,left,top,out.width,out.height,0,0,out.width,out.height);
+
+      const normalized=outCtx.getImageData(0,0,out.width,out.height);
+      const pixels=normalized.data;
+      for(let i=0;i<pixels.length;i+=4){
+        const r=pixels[i],g=pixels[i+1],b=pixels[i+2],a=pixels[i+3];
+        if(a<=20 || (r>245 && g>245 && b>245)){
+          pixels[i+3]=0;
+        }else{
+          pixels[i]=0;
+          pixels[i+1]=0;
+          pixels[i+2]=0;
+        }
+      }
+      outCtx.putImageData(normalized,0,0);
+      return out.toDataURL("image/png");
+    }
+
+    document.querySelectorAll(".sign-trigger").forEach(btn=>btn.addEventListener("click",()=>{
+      state.signingTarget=btn.dataset.signTarget;
+      const labels={financeiro:"Assinatura do Visto",administracao:"Assinatura do Atesto",diretoria:"Assinatura da Diretoria"};
+      els.sigTitle.textContent=labels[state.signingTarget];
+      clearPad();setupPen();els.dialog.showModal();
+    }));
+
+    $("clearPadBtn").addEventListener("click",clearPad);
+    $("closeSignatureDialog").addEventListener("click",()=>els.dialog.close());
+    $("cancelSignatureBtn").addEventListener("click",()=>els.dialog.close());
+
+    els.sigFile.addEventListener("change",async e=>{
+      const file=e.target.files?.[0];if(!file) return;
+      const src=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});
+      clearPad();setupPen();
+      const trimmed=await trimSignatureDataUrl(src);
+      if(!trimmed) return;
+      const img=await loadImage(trimmed);
+      const scale=Math.min(els.sigCanvas.width/img.width,els.sigCanvas.height/img.height)*.84;
+      const w=img.width*scale,h=img.height*scale;
+      sigCtx.drawImage(img,(els.sigCanvas.width-w)/2,(els.sigCanvas.height-h)/2,w,h);
+    });
+
+    $("saveSignatureBtn").addEventListener("click",async()=>{
+      const trimmed=await trimSignatureDataUrl(els.sigCanvas.toDataURL("image/png"));
+      if(!trimmed){alert("Adicione uma assinatura antes de continuar.");return}
+      state.signatures[state.signingTarget]=trimmed;
+      updateSignatureStatuses();renderActiveSvg();els.dialog.close();
+    });
+
+    function updateSignatureStatuses(){
+      const map={financeiro:$("financeSignatureStatus"),administracao:$("adminSignatureStatus"),diretoria:$("directorSignatureStatus")};
+      Object.entries(map).forEach(([key,el])=>{
+        const src=state.signatures[key];
+        const added=Boolean(src),preview=el.querySelector(".signature-preview"),empty=el.querySelector(".signature-empty");
+        if(preview){preview.classList.toggle("hidden",!added);if(added && preview.src!==src)preview.src=src;else if(!added)preview.removeAttribute("src")}
+        if(empty)empty.classList.toggle("hidden",added);
+        el.classList.toggle("added",added);
+        const button=document.querySelector(`.sign-trigger[data-sign-target="${key}"]`);
+        if(button)button.textContent=added?"Assinar novamente":"Enviar assinatura";
+      });
+      syncStampButtons();syncDownload();
+    }
+
+    function installHardLimit(input,counter){
+      const max=input.maxLength;
+      input.addEventListener("beforeinput",e=>{
+        if(!e.inputType?.startsWith("insert")||e.isComposing||e.inputType==="insertFromPaste") return;
+        const s=input.selectionStart??input.value.length,en=input.selectionEnd??s;
+        if(input.value.length-(en-s)+(e.data||"").length>max) e.preventDefault();
+      });
+      input.addEventListener("paste",e=>{
+        const pasted=e.clipboardData?.getData("text")||"",s=input.selectionStart??input.value.length,en=input.selectionEnd??s;
+        const available=max-(input.value.length-(en-s));
+        if(pasted.length<=available) return;
+        e.preventDefault();
+        if(available>0){input.setRangeText(pasted.slice(0,available),s,en,"end");input.dispatchEvent(new Event("input",{bubbles:true}))}
+      });
+      const update=()=>{
+        const n=input.value.length;counter.textContent=`${n}/${max}`;
+        counter.classList.toggle("near",n>=Math.ceil(max*.8)&&n<max);
+        counter.classList.toggle("limit",n>=max);
+      };
+      input.addEventListener("input",()=>{update();renderActiveSvg()});update();
+    }
+
+    [["fObra","fObraCount"],["fRecebido","fRecebidoCount"],["fDescricao","fDescricaoCount"],["fCT","fCTCount"],["fPedido","fPedidoCount"],["fTitulo","fTituloCount"],["dObs","dObsCount"]]
+      .forEach(([input,counter])=>installHardLimit($(input),$(counter)));
+
+    ["fData","fVistoData","aData","dData"].forEach(id=>$(id).addEventListener("input",renderActiveSvg));
+
+    function hasAnyData(){
+      return ["fObra","fRecebido","fDescricao","fCT","fPedido","fTitulo","dObs"].some(id=>$(id).value.trim()) ||
+        Object.values(state.signatures).some(Boolean);
+    }
+
+    function resetForms(){
+      ["fObra","fRecebido","fDescricao","fCT","fPedido","fTitulo","dObs"].forEach(id=>{$(id).value="";$(id).dispatchEvent(new Event("input",{bubbles:true}))});
+      ["fData","fVistoData","aData","dData"].forEach(id=>$(id).value=localISO);
+      state.signatures={financeiro:"",administracao:"",diretoria:""};
+      updateSignatureStatuses();renderActiveSvg();
+    }
+
+    document.querySelectorAll(".clear-form").forEach(btn=>btn.addEventListener("click",()=>{
+      if(!hasAnyData()) return;
+      if(!confirm("Limpar os dados e assinaturas desta etapa?")) return;
+      resetForms();
+    }));
+
+    function resetWorkspace(resetRole=true){
+      ++state.renderGeneration;
+      if(state.pageObserver){state.pageObserver.disconnect();state.pageObserver=null}
+      state.pageNodes.clear();
+      state.pdfBytes=null;state.pdfDoc=null;state.pdfName="documento.pdf";
+      state.currentPage=1;state.pageCount=0;state.overlayVisible=false;state.overlayPage=1;
+      state.stampScale=100;state.financeStamp=null;state.pdfZoom=100;state.pdfFitMode='page';
+      state.activeQueueId=null;state.queueReadOnly=false;state.queueOriginalName=null;
+      state.savedPdfBytes=null;state.savedPdfName=null;state.saveBusy=false;
+      els.saveBtn.textContent='Salvar etapa';els.downloadBtn.textContent='Baixar PDF';
+      els.pdfZoomControls.classList.add("hidden");updatePdfZoomControls();
+      els.pdfInput.value="";
+      els.pageShell.appendChild(els.overlay);
+      els.pagesStack.replaceChildren(els.pageShell);
+      els.canvas.width=0;els.canvas.height=0;els.canvas.style.width="0px";els.canvas.style.height="0px";
+      els.pageShell.style.width="0px";els.pageShell.style.height="0px";
+      els.pageInfo.textContent="Nenhum PDF carregado";
+      els.pageNavRail.classList.add("hidden");
+      els.pageNumberInput.value="1";els.pageTotal.textContent="1";
+      els.prevPageBtn.disabled=els.nextPageBtn.disabled=true;
+      els.newNoteBtn.disabled=els.addOverlayBtn.disabled=els.removeOverlayBtn.disabled=els.downloadBtn.disabled=els.saveBtn.disabled=true;
+      els.changePdfBtn.classList.add("hidden");
+      els.overlay.classList.add("hidden");updateStampSizeControls();
+      els.emptyState.style.display="grid";
+      if(resetRole)state.role=null;
+    }
+
+    els.newNoteBtn.addEventListener("click",()=>{
+      if(!confirm("Iniciar uma nova nota? O PDF atual e os dados desta etapa serão removidos.")) return;
+      const wasReadOnly=state.queueReadOnly;
+      resetWorkspace(false);resetForms();
+      if(wasReadOnly){
+        els.panelPlaceholder.classList.add('hidden');
+        els.financePanel.classList.remove('hidden');
+      }
+    });
+
+    function cloneSvgForExport(){
+      const clone=els.activeSvg.cloneNode(true);
+      const box=els.activeSvg.getAttribute("viewBox").split(/\s+/).map(Number);
+      const w=2400,h=Math.round(2400*(box[3]/box[2]));
+      clone.setAttribute("width",String(w));clone.setAttribute("height",String(h));
+      // Mantém os IDs dos clipPaths: suas referências são necessárias na exportação.
+      clone.querySelectorAll("#stampPaper").forEach(n=>n.removeAttribute("id"));
+      return {clone,w,h};
+    }
+
+    async function svgToPngBytes(){
+      const {clone,w,h}=cloneSvgForExport();
+      const str=new XMLSerializer().serializeToString(clone);
+      const blob=new Blob([str],{type:"image/svg+xml;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      try{
+        const img=await loadImage(url);
+        const c=document.createElement("canvas");c.width=w;c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        const png=await new Promise(resolve=>c.toBlob(resolve,"image/png"));
+        return new Uint8Array(await png.arrayBuffer());
+      }finally{URL.revokeObjectURL(url)}
+    }
+
+    function downloadSavedPdf(){
+      if(!canDownload())return;
+      if(!state.queueReadOnly && state.overlayVisible && !confirm('Há alterações ainda não salvas. Baixar apenas a última versão salva, sem essas alterações?'))return;
+      const url=URL.createObjectURL(new Blob([state.savedPdfBytes],{type:'application/pdf'}));
+      const link=document.createElement('a');link.href=url;link.download=state.savedPdfName||'documento.pdf';
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2500);
+    }
+    els.downloadBtn.addEventListener('click',downloadSavedPdf);
+
+    els.saveBtn.addEventListener('click',async()=>{
+      if(!canSave())return;
+      state.saveBusy=true;syncDownload();els.saveBtn.textContent='Salvando...';
+      try{
+        renderActiveSvg();
+        const pdf=await PDFDocument.load(state.pdfBytes.slice());
+        const page=pdf.getPage(state.overlayPage-1);
+        const image=await pdf.embedPng(await svgToPngBytes());
+
+        const node=state.pageNodes.get(state.overlayPage);
+        if(!node)throw new Error('Página do carimbo não disponível.');
+        const cw=node.canvas.clientWidth,ch=node.canvas.clientHeight,pw=page.getWidth(),ph=page.getHeight();
+        const left=parseFloat(els.overlay.style.left)||0,top=parseFloat(els.overlay.style.top)||0,ow=els.overlay.offsetWidth,oh=els.overlay.offsetHeight;
+        const viewport=node.viewport;
+        const sx=pw/cw,sy=ph/ch;
+        const scale=Math.hypot(viewport?.transform?.[0]||0,viewport?.transform?.[1]||0);
+        const canConvert=scale>0 && typeof viewport?.convertToPdfPoint==='function';
+        const rot=((viewport?.rotation||0)%360+360)%360;
+        if(canConvert){
+          const [px,py]=viewport.convertToPdfPoint(left,top+oh);
+          page.drawImage(image,{x:px,y:py,width:ow/scale,height:oh/scale,rotate:PDFLib.degrees(rot)});
+        }else{
+          page.drawImage(image,{x:left*sx,y:ph-(top+oh)*sy,width:ow*sx,height:oh*sy});
+        }
+        if(state.role==='financeiro'){
+          const placement={version:7,scalePct:state.stampScale,page:state.overlayPage,
+            atestoRowFraction:(112+descricaoExtra)/(145.89+descricaoExtra),
+            atestoRowHeightFraction:19/(145.89+descricaoExtra),
+            xPt:left*sx,topPt:top*sy,widthPt:ow*sx,heightPt:oh*sy,
+            viewRect:{x:left/cw,y:top/ch,w:ow/cw,h:oh/ch},pageWidthPt:pw,pageHeightPt:ph};
+          const keywords=(pdf.getKeywords()||[]).filter(k=>!FINANCE_META_PREFIXES.some(prefix=>k.startsWith(prefix)));
+          pdf.setKeywords([...keywords,FINANCE_STAMP_KEY+btoa(JSON.stringify(placement))]);
+        }
+        const bytes=await pdf.save();
+        const roleAtSave=state.role;
+        const nextStatus=roleAtSave==='financeiro'?'aguardando_atesto':roleAtSave==='administracao'?'aguardando_diretoria':'concluido';
+        const baseName=state.pdfName.replace(/\.pdf$/i,'');
+        const finalFilename=baseName+roleMeta[roleAtSave].suffix;
+        await saveGeneratedPdfToSupabase(bytes,finalFilename,nextStatus);
+        // A partir daqui o arquivo e um PDF salvo. Evita nova gravacao por engano.
+        state.queueReadOnly=true;
+        const savedFile=new File([bytes],finalFilename,{type:'application/pdf'});
+        await loadPdf(savedFile,{skipConfirm:true,isSaved:true});
+        showReadOnlyPanel(nextStatus==='concluido'
+          ? 'Documento concluído e salvo na biblioteca. Você pode baixar o PDF definitivo.'
+          : 'Etapa salva com sucesso. O documento está disponível na fila para a próxima etapa.');
+        syncDownload();
+        const doneMessages={
+          financeiro:'Etapa salva. Disponível para a Administração.',
+          administracao:'Etapa salva. Disponível para a Diretoria.',
+          diretoria:'Documento concluído e salvo na biblioteca.'
+        };
+        els.notice.textContent=doneMessages[roleAtSave];els.notice.classList.add('show');
+        setTimeout(()=>els.notice.classList.remove('show'),4200);
+      }catch(err){
+        console.error(err);
+        alert('Não foi possível salvar a etapa. Verifique a conexão e a configuração do Supabase.');
+      }finally{
+        state.saveBusy=false;els.saveBtn.textContent='Salvar etapa';syncDownload();
+      }
+    });
+
+    updateSignatureStatuses();
+    initAuth();
+  </script>
+</body>
+</html>
